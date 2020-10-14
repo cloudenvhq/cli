@@ -40,7 +40,7 @@ ENV.fetch("AWS_SECRET_ACCESS_KEY")
 ## Python CloudEnv
 
 ```console
-$ pip install cloudenv --save
+$ pip install cloudenv
 ```
 
 ```python
