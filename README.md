@@ -1,0 +1,3 @@
+# CloudEnv CLI
+
+Welcome, here's how easy it is to get started with CloudEnv...
