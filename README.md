@@ -7,9 +7,9 @@ $ brew install cloudenvhq/cli/cloudenv
 $ cloudenv login
 $ cd /var/apps/sampleapp
 $ cloudenv init                         # this creates your secret 64-bit key
-$ cloudenv merge default .env           # this encrypts your existing env keys into CloudEnv
-$ cloudenv merge development .env.dev   # this encrypts your development-specific env keys into CloudEnv
-$ cloudenv merge production .env.prod   # this encrypts your production-specific env keys into CloudEnv
+$ cloudenv merge default .env           # this encrypts your existing env vars into CloudEnv
+$ cloudenv merge development .env.dev   # this encrypts your development-specific env vars into CloudEnv
+$ cloudenv merge production .env.prod   # this encrypts your production-specific env vars into CloudEnv
 ```
 
 ## Node CloudEnv
