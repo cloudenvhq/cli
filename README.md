@@ -6,7 +6,7 @@ Welcome, here's how easy it is to get started with CloudEnv...
 $ brew install cloudenvhq/cli/cloudenv
 $ cloudenv login
 $ cd /var/apps/sampleapp
-$ cloudenv init sampleapp               # this creates your secret 64-bit key
+$ cloudenv init                         # this creates your secret 64-bit key
 $ cloudenv merge default .env           # this encrypts your existing env vars into CloudEnv
 $ cloudenv merge development .env.dev   # this encrypts your development-specific env vars into CloudEnv
 $ cloudenv merge production .env.prod   # this encrypts your production-specific env vars into CloudEnv
