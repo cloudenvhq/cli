@@ -11,8 +11,8 @@ $ cloudenv merge default .env           # this encrypts your existing env vars i
 $ cloudenv merge development .env.dev   # this encrypts your development-specific env vars into CloudEnv
 $ cloudenv merge production .env.prod   # this encrypts your production-specific env vars into CloudEnv
 $ EDITOR=vim cloudenv edit production   # edit your env vars locally, as soon as you save,
-                                        #   they are encrypted and uploaded to CloudEnv
-                                        #   and instantly distributed to other team members and environments
+$                                       #   they are encrypted and uploaded to CloudEnv
+$                                       #   and instantly distributed to other team members and environments
 ```
 
 ## Node CloudEnv
