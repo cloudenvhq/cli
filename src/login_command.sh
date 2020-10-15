@@ -55,11 +55,22 @@ rm /tmp/cloudenv.pub
 base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 > ~/.cloudenvrc
 echo >> ~/.cloudenvrc
 gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc > /tmp/cloudenv.auth
-curl -s -F 'data=@/tmp/cloudenv.auth' https://app.cloudenv.com/initauth > /tmp/cloudenv.auth-url
+curl -s -F "data=@/tmp/cloudenv.auth" https://app.cloudenv.com/initauth > /tmp/cloudenv.auth-url
 
 echo
 echo "Please visit this url and login or register to authorize this computer: "
 echo
 cat /tmp/cloudenv.auth-url
 echo
+echo
+
+i=0
+
+while [[ $i == ?(-)+([0-9]) ]]
+do
+  i=`curl -s -F "data=@$HOME/.cloudenvrc" https://app.cloudenv.com/checkauth`
+  sleep 2
+done
+
+echo "You are now logged in as $i"
 echo
