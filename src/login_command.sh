@@ -67,7 +67,7 @@ echo
 email=0
 i=0
 
-while [[ $email == ?(-)+([0-9]) ]] & [[ $i -lt 100 ]]
+while [[ $email == ?(-)+([0-9]) ]] && [ $i -lt 100 ]
 do
   i=$((i+1))
   email=`curl -s -F "data=@$HOME/.cloudenvrc" https://app.cloudenv.com/checkauth`
