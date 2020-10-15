@@ -66,21 +66,25 @@ cat /tmp/cloudenv.auth-url
 echo
 echo
 
-email=0
+data=0
 i=0
 
-while [[ $email == ?(-)+([0-9]) ]] && [ $i -lt 100 ]
+while [[ $data == ?(-)+([0-9]) ]] && [ $i -lt 100 ]
 do
   i=$((i+1))
-  email=`curl -s -F "data=@$HOME/.cloudenvrc" https://app.cloudenv.com/checkauth`
+  data=`curl -s -F "data=@$HOME/.cloudenvrc" https://app.cloudenv.com/checkauth`
   sleep 2
 done
 
-if [[ $email == ?(-)+([0-9]) ]]
+if [[ $data == ?(-)+([0-9]) ]]
 then
   echo "Login failed, please try again"
   echo
 else
+  read -ra ADDR <<< "$data"
+  email="${ADDR[0]}"
+  token="${ADDR[1]}"
+  echo $token > ~/.cloudenvrc
   echo "You are now logged in as $email"
   echo
 fi
