@@ -7,45 +7,49 @@ environment_variables:
   help: Set your API key
 
 commands:
-- name: download
-  short: d
-  help: Download a file
+- name: login
+  short: l
+  help: Login to CloudEnv service
+  examples:
+  - cloudenv login
+
+- name: init
+  short: i
+  help: Initialize a new project
+  flags:
+  - long: --name
+    short: -n
+    arg: name
+    help: Name of the project
+    required: true
+
+- name: merge
+  short: m
+  help: Merge into CloudEnv
 
   args:
-  - name: source
+  - name: environment
     required: true
-    help: URL to download from
-  - name: target
-    help: "Target filename (default: same as source)"
-
-  flags:
-  - long: --force
-    short: -f
-    help: Overwrite existing files
+    help: Which environment should these variables be accessible in
+  - name: filename
+    required: true
+    help: Target filename of existing env file
 
   examples:
-  - cli download example.com
-  - cli download example.com ./output -f
+  - cloudenv merge default .env
+  - cloudenv merge development .env.dev
 
-  environment_variables:
-  - name: default_target_location
-    help: Set the default location to download to
+- name: edit
+  short: e
+  help: Edit an environmental variable file
 
-- name: upload
-  short: u
-  help: Upload a file
   args:
-  - name: source
+  - name: environment
     required: true
-    help: File to upload
+    help: Which environment should these variables be accessible in
 
-  flags:
-  - long: --user
-    short: -u
-    arg: user
-    help: Username to use for logging in
-    required: true
-  - long: --password
-    short: -p
-    arg: password
-    help: Password to use for logging in
+  examples:
+  - cloudenv edit default
+  - cloudenv edit staging
+  - cloudenv edit production
+

@@ -24,8 +24,10 @@ cloudenv_usage() {
   echo
   # :command.usage_commands
   printf "Commands:\n"
-  echo "  download   Download a file"
-  echo "  upload     Upload a file"
+  echo "  login   Login to CloudEnv service"
+  echo "  init    Initialize a new project"
+  echo "  merge   Merge into CloudEnv"
+  echo "  edit    Edit an environmental variable file"
   echo
 
   if [[ -n $long_usage ]]; then
@@ -50,21 +52,21 @@ cloudenv_usage() {
 }
 
 # :command.usage
-cloudenv_download_usage() {
+cloudenv_login_usage() {
   if [[ -n $long_usage ]]; then
-    printf "cloudenv download - Download a file\n"
+    printf "cloudenv login - Login to CloudEnv service\n"
     echo 
   else
-    printf "cloudenv download - Download a file\n"
+    printf "cloudenv login - Login to CloudEnv service\n"
     echo 
   fi
 
-  printf "Shortcut: d\n"
+  printf "Shortcut: l\n"
   echo
 
   printf "Usage:\n"
-  printf "  cloudenv download SOURCE [TARGET] [options]\n"
-  printf "  cloudenv download --help | -h\n"
+  printf "  cloudenv login\n"
+  printf "  cloudenv login --help | -h\n"
   echo
 
   if [[ -n $long_usage ]]; then
@@ -73,56 +75,32 @@ cloudenv_download_usage() {
     echo "  --help, -h"
     printf "    Show this help\n"
     echo
-    # :command.usage_flags
-    # :flag.usage
-    echo "  --force, -f"
-    printf "    Overwrite existing files\n"
-    echo
-    # :command.usage_args
-    printf "Arguments:\n"
-    
-    # :argument.usage
-    echo "  SOURCE"
-    printf "    URL to download from\n"
-    echo
-    
-    # :argument.usage
-    echo "  TARGET"
-    printf "    Target filename (default: same as source)\n"
-    echo
-    # :command.usage_environment_variables
-    printf "Environment Variables:\n"
-    
-    # :environment_variable.usage
-    echo "  DEFAULT_TARGET_LOCATION"
-    printf "    Set the default location to download to\n"
-    echo
+
     # :command.usage_examples
     printf "Examples:\n"
     
-    printf "  cli download example.com\n"
-    printf "  cli download example.com ./output -f\n"
+    printf "  cloudenv login\n"
     echo
 
   fi
 }
 
 # :command.usage
-cloudenv_upload_usage() {
+cloudenv_init_usage() {
   if [[ -n $long_usage ]]; then
-    printf "cloudenv upload - Upload a file\n"
+    printf "cloudenv init - Initialize a new project\n"
     echo 
   else
-    printf "cloudenv upload - Upload a file\n"
+    printf "cloudenv init - Initialize a new project\n"
     echo 
   fi
 
-  printf "Shortcut: u\n"
+  printf "Shortcut: i\n"
   echo
 
   printf "Usage:\n"
-  printf "  cloudenv upload SOURCE [options]\n"
-  printf "  cloudenv upload --help | -h\n"
+  printf "  cloudenv init [options]\n"
+  printf "  cloudenv init --help | -h\n"
   echo
 
   if [[ -n $long_usage ]]; then
@@ -133,20 +111,100 @@ cloudenv_upload_usage() {
     echo
     # :command.usage_flags
     # :flag.usage
-    echo "  --user, -u USER (required)"
-    printf "    Username to use for logging in\n"
+    echo "  --name, -n NAME (required)"
+    printf "    Name of the project\n"
     echo
-    
-    # :flag.usage
-    echo "  --password, -p PASSWORD"
-    printf "    Password to use for logging in\n"
+
+  fi
+}
+
+# :command.usage
+cloudenv_merge_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "cloudenv merge - Merge into CloudEnv\n"
+    echo 
+  else
+    printf "cloudenv merge - Merge into CloudEnv\n"
+    echo 
+  fi
+
+  printf "Shortcut: m\n"
+  echo
+
+  printf "Usage:\n"
+  printf "  cloudenv merge ENVIRONMENT FILENAME\n"
+  printf "  cloudenv merge --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
     echo
+
     # :command.usage_args
     printf "Arguments:\n"
     
     # :argument.usage
-    echo "  SOURCE"
-    printf "    File to upload\n"
+    echo "  ENVIRONMENT"
+    printf "    Which environment should these variables be accessible in\n"
+    echo
+    
+    # :argument.usage
+    echo "  FILENAME"
+    printf "    Target filename of existing env file\n"
+    echo
+
+    # :command.usage_examples
+    printf "Examples:\n"
+    
+    printf "  cloudenv merge default .env\n"
+    printf "  cloudenv merge development .env.dev\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+cloudenv_edit_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "cloudenv edit - Edit an environmental variable file\n"
+    echo 
+  else
+    printf "cloudenv edit - Edit an environmental variable file\n"
+    echo 
+  fi
+
+  printf "Shortcut: e\n"
+  echo
+
+  printf "Usage:\n"
+  printf "  cloudenv edit ENVIRONMENT\n"
+  printf "  cloudenv edit --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+    
+    # :argument.usage
+    echo "  ENVIRONMENT"
+    printf "    Which environment should these variables be accessible in\n"
+    echo
+
+    # :command.usage_examples
+    printf "Examples:\n"
+    
+    printf "  cloudenv edit default\n"
+    printf "  cloudenv edit staging\n"
+    printf "  cloudenv edit production\n"
     echo
 
   fi
@@ -160,19 +218,37 @@ inspect_args() {
 
 # :command.command_functions
 # :command.function
-cloudenv_download_command() {
-  # :src/download_command.sh
-  echo "# this file is located in 'src/download_command.sh'"
-  echo "# code for 'cli download' goes here"
+cloudenv_login_command() {
+  # :src/login_command.sh
+  echo "# this file is located in 'src/login_command.sh'"
+  echo "# code for 'cloudenv login' goes here"
   echo "# you can edit it freely and regenerate (it will not be overwritten)"
   inspect_args
 }
 
 # :command.function
-cloudenv_upload_command() {
-  # :src/upload_command.sh
-  echo "# this file is located in 'src/upload_command.sh'"
-  echo "# code for 'cli upload' goes here"
+cloudenv_init_command() {
+  # :src/init_command.sh
+  echo "# this file is located in 'src/init_command.sh'"
+  echo "# code for 'cloudenv init' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
+}
+
+# :command.function
+cloudenv_merge_command() {
+  # :src/merge_command.sh
+  echo "# this file is located in 'src/merge_command.sh'"
+  echo "# code for 'cloudenv merge' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
+}
+
+# :command.function
+cloudenv_edit_command() {
+  # :src/edit_command.sh
+  echo "# this file is located in 'src/edit_command.sh'"
+  echo "# code for 'cloudenv edit' goes here"
   echo "# you can edit it freely and regenerate (it will not be overwritten)"
   inspect_args
 }
@@ -202,17 +278,31 @@ parse_requirements() {
   -* )
     ;;
   
-  download | d )
-    action="download"
+  login | l )
+    action="login"
     shift
-    cloudenv_download_parse_requirements "$@"
+    cloudenv_login_parse_requirements "$@"
     shift $#
     ;;    
   
-  upload | u )
-    action="upload"
+  init | i )
+    action="init"
     shift
-    cloudenv_upload_parse_requirements "$@"
+    cloudenv_init_parse_requirements "$@"
+    shift $#
+    ;;    
+  
+  merge | m )
+    action="merge"
+    shift
+    cloudenv_merge_parse_requirements "$@"
+    shift $#
+    ;;    
+  
+  edit | e )
+    action="edit"
+    shift
+    cloudenv_edit_parse_requirements "$@"
     shift $#
     ;;    
   
@@ -246,7 +336,7 @@ parse_requirements() {
 }
 
 # :command.parse_requirements
-cloudenv_download_parse_requirements() {
+cloudenv_login_parse_requirements() {
   # :command.fixed_flag_filter
   case "$1" in
   --version | -v )
@@ -256,7 +346,7 @@ cloudenv_download_parse_requirements() {
   
   --help | -h )
     long_usage=yes
-    cloudenv_download_usage
+    cloudenv_login_usage
     exit 1
     ;;
   
@@ -264,24 +354,71 @@ cloudenv_download_parse_requirements() {
   # :command.environment_variables_filter
   # :command.dependencies_filter
   # :command.command_filter
-  action="download"
+  action="login"
   # :command.required_args_filter
-  if [[ $1 && $1 != -* ]]; then
-    args[source]=$1
-    shift
-  else
-    printf "missing required argument: SOURCE\nusage: cloudenv download SOURCE [TARGET] [options]\n"
-    exit 1
-  fi
   # :command.required_flags_filter
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
+  
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+  
+    * )
+      # :command.parse_requirements_case
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+      ;;
+  
+    esac
+  done
+  # :command.default_assignments
+}
+
+# :command.parse_requirements
+cloudenv_init_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+  
+  --help | -h )
+    long_usage=yes
+    cloudenv_init_usage
+    exit 1
+    ;;
+  
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  # :command.command_filter
+  action="init"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  argstring="$*"
+  if [[ "$argstring" != *--name* && "$argstring" != *-n* ]]; then
+    printf "missing required flag: --name, -n NAME\n"
+    exit 1
+  fi
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
     # :flag.case
-    --force | -f )
-      args[--force]=1
-      shift
+    --name | -n )
+      if [[ $2 && $2 != -* ]]; then
+        args[--name]="$2"
+        shift
+        shift
+      else
+        printf "%s\n" "--name requires an argument: --name, -n NAME"
+        exit 1
+      fi
       ;;
   
   
@@ -292,11 +429,69 @@ cloudenv_download_parse_requirements() {
   
     * )
       # :command.parse_requirements_case
-      if [[ ! ${args[source]} ]]; then
-        args[source]=$1
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+      ;;
+  
+    esac
+  done
+  # :command.default_assignments
+}
+
+# :command.parse_requirements
+cloudenv_merge_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+  
+  --help | -h )
+    long_usage=yes
+    cloudenv_merge_usage
+    exit 1
+    ;;
+  
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  # :command.command_filter
+  action="merge"
+  # :command.required_args_filter
+  if [[ $1 && $1 != -* ]]; then
+    args[environment]=$1
+    shift
+  else
+    printf "missing required argument: ENVIRONMENT\nusage: cloudenv merge ENVIRONMENT FILENAME\n"
+    exit 1
+  fi
+  
+  if [[ $1 && $1 != -* ]]; then
+    args[filename]=$1
+    shift
+  else
+    printf "missing required argument: FILENAME\nusage: cloudenv merge ENVIRONMENT FILENAME\n"
+    exit 1
+  fi
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+  
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+  
+    * )
+      # :command.parse_requirements_case
+      if [[ ! ${args[environment]} ]]; then
+        args[environment]=$1
         shift
-      elif [[ ! ${args[target]} ]]; then
-        args[target]=$1
+      elif [[ ! ${args[filename]} ]]; then
+        args[filename]=$1
         shift
       else
         printf "invalid argument: %s\n" "$key"
@@ -310,7 +505,7 @@ cloudenv_download_parse_requirements() {
 }
 
 # :command.parse_requirements
-cloudenv_upload_parse_requirements() {
+cloudenv_edit_parse_requirements() {
   # :command.fixed_flag_filter
   case "$1" in
   --version | -v )
@@ -320,7 +515,7 @@ cloudenv_upload_parse_requirements() {
   
   --help | -h )
     long_usage=yes
-    cloudenv_upload_usage
+    cloudenv_edit_usage
     exit 1
     ;;
   
@@ -328,49 +523,20 @@ cloudenv_upload_parse_requirements() {
   # :command.environment_variables_filter
   # :command.dependencies_filter
   # :command.command_filter
-  action="upload"
+  action="edit"
   # :command.required_args_filter
   if [[ $1 && $1 != -* ]]; then
-    args[source]=$1
+    args[environment]=$1
     shift
   else
-    printf "missing required argument: SOURCE\nusage: cloudenv upload SOURCE [options]\n"
+    printf "missing required argument: ENVIRONMENT\nusage: cloudenv edit ENVIRONMENT\n"
     exit 1
   fi
   # :command.required_flags_filter
-  argstring="$*"
-  if [[ "$argstring" != *--user* && "$argstring" != *-u* ]]; then
-    printf "missing required flag: --user, -u USER\n"
-    exit 1
-  fi
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-    # :flag.case
-    --user | -u )
-      if [[ $2 && $2 != -* ]]; then
-        args[--user]="$2"
-        shift
-        shift
-      else
-        printf "%s\n" "--user requires an argument: --user, -u USER"
-        exit 1
-      fi
-      ;;
-  
-    # :flag.case
-    --password | -p )
-      if [[ $2 && $2 != -* ]]; then
-        args[--password]="$2"
-        shift
-        shift
-      else
-        printf "%s\n" "--password requires an argument: --password, -p PASSWORD"
-        exit 1
-      fi
-      ;;
-  
   
     -* )
       printf "invalid option: %s\n" "$key"
@@ -379,8 +545,8 @@ cloudenv_upload_parse_requirements() {
   
     * )
       # :command.parse_requirements_case
-      if [[ ! ${args[source]} ]]; then
-        args[source]=$1
+      if [[ ! ${args[environment]} ]]; then
+        args[environment]=$1
         shift
       else
         printf "invalid argument: %s\n" "$key"
@@ -413,20 +579,36 @@ run() {
   declare -A args
   parse_requirements "$@"
 
-  if [[ $action == "download" ]]; then
+  if [[ $action == "login" ]]; then
     if [[ ${args[--help]} ]]; then
       long_usage=yes
-      cloudenv_download_usage
+      cloudenv_login_usage
     else
-      cloudenv_download_command
+      cloudenv_login_command
     fi
   
-  elif [[ $action == "upload" ]]; then
+  elif [[ $action == "init" ]]; then
     if [[ ${args[--help]} ]]; then
       long_usage=yes
-      cloudenv_upload_usage
+      cloudenv_init_usage
     else
-      cloudenv_upload_command
+      cloudenv_init_command
+    fi
+  
+  elif [[ $action == "merge" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      cloudenv_merge_usage
+    else
+      cloudenv_merge_command
+    fi
+  
+  elif [[ $action == "edit" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      cloudenv_edit_usage
+    else
+      cloudenv_edit_command
     fi
   
   elif [[ ${args[--version]} ]]; then
