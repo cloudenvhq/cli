@@ -111,7 +111,7 @@ cloudenv_init_usage() {
     echo
     # :command.usage_flags
     # :flag.usage
-    echo "  --name, -n NAME (required)"
+    echo "  --name, -n NAME"
     printf "    Name of the project\n"
     echo
 
@@ -229,10 +229,7 @@ cloudenv_login_command() {
 # :command.function
 cloudenv_init_command() {
   # :src/init_command.sh
-  echo "# this file is located in 'src/init_command.sh'"
-  echo "# code for 'cloudenv init' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
+  openssl rand -hex 64 > .cloudenv_secret_key
 }
 
 # :command.function
@@ -247,10 +244,13 @@ cloudenv_merge_command() {
 # :command.function
 cloudenv_edit_command() {
   # :src/edit_command.sh
-  echo "# this file is located in 'src/edit_command.sh'"
-  echo "# code for 'cloudenv edit' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
+  if [[ "${args[--edit]}" ]]; then
+    editor="${EDITOR:-vi}"
+    "$editor" "$CONFIG_FILE"
+  else
+    cyan "# $CONFIG_FILE"
+    config_show
+  fi
 }
 
 # :command.parse_requirements
@@ -400,11 +400,6 @@ cloudenv_init_parse_requirements() {
   action="init"
   # :command.required_args_filter
   # :command.required_flags_filter
-  argstring="$*"
-  if [[ "$argstring" != *--name* && "$argstring" != *-n* ]]; then
-    printf "missing required flag: --name, -n NAME\n"
-    exit 1
-  fi
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"

@@ -1,4 +1,7 @@
-echo "# this file is located in 'src/edit_command.sh'"
-echo "# code for 'cloudenv edit' goes here"
-echo "# you can edit it freely and regenerate (it will not be overwritten)"
-inspect_args
+if [[ "${args[--edit]}" ]]; then
+  editor="${EDITOR:-vi}"
+  "$editor" "$CONFIG_FILE"
+else
+  cyan "# $CONFIG_FILE"
+  config_show
+fi

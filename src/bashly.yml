@@ -21,7 +21,6 @@ commands:
     short: -n
     arg: name
     help: Name of the project
-    required: true
 
 - name: merge
   short: m
