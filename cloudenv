@@ -340,18 +340,18 @@ cloudenv_init_command() {
   		echo >> .cloudenv-secret-key-new
   		mv .cloudenv-secret-key-new .cloudenv-secret-key
   		keysha=`openssl dgst -sha256 .cloudenv-secret-key`
-  		curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/app/update.json?name=$name&keysha=$keysha" > /tmp/cloudenv-app
+  		curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/apps/update?name=$name&keysha=$keysha" > /tmp/cloudenv-app
   		echo
   		echo "SUCCESS: New encryption key generated, you will now need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
   	fi
   else
   	read -p "Name of App: " name
-  	curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/app/get.json?name=$name" > /tmp/cloudenv-app
+  	curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/apps/get?name=$name" > /tmp/cloudenv-app
   	echo $name > .cloudenv-secret-key
   	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 >> .cloudenv-secret-key
   	echo >> .cloudenv-secret-key
   	keysha=`openssl dgst -sha256 .cloudenv-secret-key`
-  	curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/app/update.json?name=$name&keysha=$keysha" > /tmp/cloudenv-app
+  	curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/apps/update?name=$name&keysha=$keysha" > /tmp/cloudenv-app
   fi
 }
 
@@ -395,7 +395,7 @@ cloudenv_edit_command() {
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
   
-  curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/env/get.json?project=$project&environment=$environment" > /tmp/cloudenv-edit
+  curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs/get?project=$project&environment=$environment" > /tmp/cloudenv-edit
   
   openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
   
@@ -403,7 +403,7 @@ cloudenv_edit_command() {
   
   openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
   
-  curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/env/update.json?project=$project&environment=$environment"
+  curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/envs/update?project=$project&environment=$environment"
   
   rm /tmp/cloudenv-edit*
 }
