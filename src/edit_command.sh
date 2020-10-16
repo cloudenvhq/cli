@@ -1,3 +1,13 @@
+if [ ! -f ~/.cloudenvrc ]
+then
+	echo
+	echo "Not logged in"
+	echo
+	echo "Please run: cloudenv login"
+	echo
+	exit
+fi
+
 if [ ! -f .cloudenv-secret-key ]
 then
 	echo
@@ -16,7 +26,7 @@ project=`head -1 .cloudenv-secret-key`
 secretkey=`tail -1 .cloudenv-secret-key`
 environment="${args[environment]}"
 
-curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/get_env.json?project=$project&environment=$environment" > /tmp/cloudenv-edit
+curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/env/get.json?project=$project&environment=$environment" > /tmp/cloudenv-edit
 
 openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
 
@@ -24,6 +34,6 @@ openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv
 
 openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
 
-curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/put_env.json?project=$project&environment=$environment"
+curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/env/update.json?project=$project&environment=$environment"
 
 rm /tmp/cloudenv-edit*

@@ -316,6 +316,18 @@ cloudenv_login_command() {
 # :command.function
 cloudenv_init_command() {
   # :src/init_command.sh
+  if [ ! -f ~/.cloudenvrc ]
+  then
+  	echo
+  	echo "Not logged in"
+  	echo
+  	echo "Please run: cloudenv login"
+  	echo
+  	exit
+  fi
+  
+  bearer=`cat ~/.cloudenvrc`
+  
   if [ -f .cloudenv-secret-key ]
   then
   	echo "Already found existing CloudEnv project in $PWD/.cloudenv-secret-key"
@@ -327,14 +339,19 @@ cloudenv_init_command() {
   		base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 >> .cloudenv-secret-key-new
   		echo >> .cloudenv-secret-key-new
   		mv .cloudenv-secret-key-new .cloudenv-secret-key
+  		keysha=`openssl dgst -sha256 .cloudenv-secret-key`
+  		curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/app/update.json?name=$name&keysha=$keysha" > /tmp/cloudenv-app
   		echo
   		echo "SUCCESS: New encryption key generated, you will now need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
   	fi
   else
   	read -p "Name of App: " name
+  	curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/app/get.json?name=$name" > /tmp/cloudenv-app
   	echo $name > .cloudenv-secret-key
   	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 >> .cloudenv-secret-key
   	echo >> .cloudenv-secret-key
+  	keysha=`openssl dgst -sha256 .cloudenv-secret-key`
+  	curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/app/update.json?name=$name&keysha=$keysha" > /tmp/cloudenv-app
   fi
 }
 
@@ -350,6 +367,16 @@ cloudenv_merge_command() {
 # :command.function
 cloudenv_edit_command() {
   # :src/edit_command.sh
+  if [ ! -f ~/.cloudenvrc ]
+  then
+  	echo
+  	echo "Not logged in"
+  	echo
+  	echo "Please run: cloudenv login"
+  	echo
+  	exit
+  fi
+  
   if [ ! -f .cloudenv-secret-key ]
   then
   	echo
@@ -368,7 +395,7 @@ cloudenv_edit_command() {
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
   
-  curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/get_env.json?project=$project&environment=$environment" > /tmp/cloudenv-edit
+  curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/env/get.json?project=$project&environment=$environment" > /tmp/cloudenv-edit
   
   openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
   
@@ -376,7 +403,7 @@ cloudenv_edit_command() {
   
   openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
   
-  curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/put_env.json?project=$project&environment=$environment"
+  curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/env/update.json?project=$project&environment=$environment"
   
   rm /tmp/cloudenv-edit*
 }
