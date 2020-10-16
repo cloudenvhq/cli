@@ -44,8 +44,8 @@ commands:
 
   args:
   - name: environment
-    required: true
     help: Which environment should these variables be accessible in
+    default: default
 
   examples:
   - cloudenv edit default

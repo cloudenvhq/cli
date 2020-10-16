@@ -180,7 +180,7 @@ cloudenv_edit_usage() {
   echo
 
   printf "Usage:\n"
-  printf "  cloudenv edit ENVIRONMENT\n"
+  printf "  cloudenv edit [ENVIRONMENT]\n"
   printf "  cloudenv edit --help | -h\n"
   echo
 
@@ -197,6 +197,7 @@ cloudenv_edit_usage() {
     # :argument.usage
     echo "  ENVIRONMENT"
     printf "    Which environment should these variables be accessible in\n"
+    printf "    Default: default\n"
     echo
 
     # :command.usage_examples
@@ -315,8 +316,26 @@ cloudenv_login_command() {
 # :command.function
 cloudenv_init_command() {
   # :src/init_command.sh
-  base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 > .cloudenv-secret-key
-  echo >> .cloudenv-secret-key
+  if [ -f .cloudenv-secret-key ]
+  then
+  	echo "Already found existing CloudEnv project in $PWD/.cloudenv-secret-key"
+  	echo
+  	read -p "Generate a new secret key for this project? (N/y): " newkey
+  	if [ "$newkey" == "y" ]
+  	then
+  		head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
+  		base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 >> .cloudenv-secret-key-new
+  		echo >> .cloudenv-secret-key-new
+  		mv .cloudenv-secret-key-new .cloudenv-secret-key
+  		echo
+  		echo "SUCCESS: New encryption key generated, you will now need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
+  	fi
+  else
+  	read -p "Name of App: " name
+  	echo $name > .cloudenv-secret-key
+  	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 >> .cloudenv-secret-key
+  	echo >> .cloudenv-secret-key
+  fi
 }
 
 # :command.function
@@ -331,13 +350,31 @@ cloudenv_merge_command() {
 # :command.function
 cloudenv_edit_command() {
   # :src/edit_command.sh
-  if [[ "${args[--edit]}" ]]; then
-    editor="${EDITOR:-vi}"
-    "$editor" "$CONFIG_FILE"
-  else
-    cyan "# $CONFIG_FILE"
-    config_show
+  if [ ! -f .cloudenv-secret-key ]
+  then
+  	echo
+  	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
+  	echo
+  	echo "Please run: cloudenv init"
+  	echo
+  	echo "Or cd into the root directory of your app to make env edits"
+  	echo
+  	exit
   fi
+  
+  editor="${EDITOR:-nano}"
+  bearer=`cat ~/.cloudenvrc`
+  project=`head -1 .cloudenv-secret-key`
+  secretkey=`tail -1 .cloudenv-secret-key`
+  environment="${args[environment]}"
+  
+  curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/get_env.json?project=$project&environment=$environment" > /tmp/cloudenv-edit
+  
+  "$editor" /tmp/cloudenv-edit
+  
+  curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/put_env.json?project=$project&environment=$environment"
+  
+  rm /tmp/cloudenv-edit
 }
 
 # :command.parse_requirements
@@ -607,13 +644,6 @@ cloudenv_edit_parse_requirements() {
   # :command.command_filter
   action="edit"
   # :command.required_args_filter
-  if [[ $1 && $1 != -* ]]; then
-    args[environment]=$1
-    shift
-  else
-    printf "missing required argument: ENVIRONMENT\nusage: cloudenv edit ENVIRONMENT\n"
-    exit 1
-  fi
   # :command.required_flags_filter
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -639,6 +669,7 @@ cloudenv_edit_parse_requirements() {
     esac
   done
   # :command.default_assignments
+  [[ -n ${args[environment]} ]] || args[environment]="default"
 }
 
 # :command.initialize
