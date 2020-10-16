@@ -9,7 +9,7 @@ $ cd /var/apps/sampleapp
 $ cloudenv init                         # this creates a secret 256-bit key for the project
 $ cloudenv push default .env            # this encrypts your existing env vars into CloudEnv
 $ cloudenv push development .env.dev    # this encrypts your development-specific env vars into CloudEnv
-$ cloudenv push staging .env.staging    # this encrypts your development-specific env vars into CloudEnv
+$ cloudenv push staging .env.staging    # this encrypts your staging-specific env vars into CloudEnv
 $ cloudenv push production .env.prod    # this encrypts your production-specific env vars into CloudEnv
 $ cloudenv edit production              # edit your env vars locally, as soon as you save,
 $                                       #   they are encrypted and uploaded to CloudEnv
