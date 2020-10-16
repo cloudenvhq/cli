@@ -23,7 +23,7 @@ $ npm install cloudenv --save
 ```
 
 ```ruby
-require("envkey")
+require("cloudenv")
 
 process.env.AWS_SECRET_ACCESS_KEY
 ```
