@@ -33,8 +33,7 @@ curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs
 if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
 then
 	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment"
-	source "$tempdir/cloudenv-edit-$environment"
-	"$command"
+	bash -c "source '$tempdir/cloudenv-edit-$environment'; $command"
 fi
 
 rm -rf "$tempdir"

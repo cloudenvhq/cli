@@ -81,17 +81,14 @@ commands:
   - name: environment
     help: Which environment should these variables be accessible in
     default: default
-
-  flags:
-  - long: --command
-    short: -c
-    arg: command
+  - name: command
     help: Name of the command to start
+    default: default
 
   examples:
-  - cloudenv run default --command your-app-cli-start-command
-  - cloudenv run staging --command your-app-cli-start-command
-  - cloudenv run production --command your-app-cli-start-command
+  - cloudenv run default your-app-cli-start-command
+  - cloudenv run staging your-app-cli-start-command
+  - cloudenv run production your-app-cli-start-command
 
 - name: upgrade
   short: u
