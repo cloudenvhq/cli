@@ -93,3 +93,9 @@ commands:
   - cloudenv run staging --command your-app-cli-start-command
   - cloudenv run production --command your-app-cli-start-command
 
+- name: upgrade
+  short: u
+  help: Upgrade the cloudenv cli
+
+  examples:
+  - cloudenv upgrade
