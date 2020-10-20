@@ -28,6 +28,8 @@ cloudenv_usage() {
   echo "  init    Initialize a new project"
   echo "  merge   Merge into CloudEnv"
   echo "  edit    Edit an environmental variable file"
+  echo "  show    Show an environmental variable file"
+  echo "  push    Push an existing environmental variable file"
   echo
 
   if [[ -n $long_usage ]]; then
@@ -200,12 +202,91 @@ cloudenv_edit_usage() {
     printf "    Default: default\n"
     echo
 
+  fi
+}
+
+# :command.usage
+cloudenv_show_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "cloudenv show - Show an environmental variable file\n"
+    echo 
+  else
+    printf "cloudenv show - Show an environmental variable file\n"
+    echo 
+  fi
+
+  printf "Shortcut: s\n"
+  echo
+
+  printf "Usage:\n"
+  printf "  cloudenv show [ENVIRONMENT]\n"
+  printf "  cloudenv show --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+    
+    # :argument.usage
+    echo "  ENVIRONMENT"
+    printf "    Which environment should these variables be accessible in\n"
+    printf "    Default: default\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+cloudenv_push_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "cloudenv push - Push an existing environmental variable file\n"
+    echo 
+  else
+    printf "cloudenv push - Push an existing environmental variable file\n"
+    echo 
+  fi
+
+  printf "Shortcut: p\n"
+  echo
+
+  printf "Usage:\n"
+  printf "  cloudenv push [ENVIRONMENT] [FILE]\n"
+  printf "  cloudenv push --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+    
+    # :argument.usage
+    echo "  ENVIRONMENT"
+    printf "    Which environment should these variables be accessible in\n"
+    printf "    Default: default\n"
+    echo
+    
+    # :argument.usage
+    echo "  FILE"
+    printf "    Which file should be pushed\n"
+    echo
+
     # :command.usage_examples
     printf "Examples:\n"
     
-    printf "  cloudenv edit default\n"
-    printf "  cloudenv edit staging\n"
-    printf "  cloudenv edit production\n"
+    printf "  cloudenv push default .env\n"
+    printf "  cloudenv push staging .env.staging\n"
+    printf "  cloudenv push production .env.production\n"
     echo
 
   fi
@@ -330,19 +411,27 @@ cloudenv_init_command() {
   
   if [ -f .cloudenv-secret-key ]
   then
+  	name=`head -1 .cloudenv-secret-key`
+  	secretkey=`tail -1 .cloudenv-secret-key`
+  	environment="default"
   	echo "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
   	echo
   	read -p "Generate a new secret key for this project? (N/y): " newkey
   	if [ "$newkey" == "y" ]
   	then
+  		curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?app=$name&environment=$environment" > /tmp/cloudenv-edit
+  		openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
   		head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
   		base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 >> .cloudenv-secret-key-new
   		echo >> .cloudenv-secret-key-new
   		mv .cloudenv-secret-key-new .cloudenv-secret-key
-  		name=`head -1 .cloudenv-secret-key`
   		sha=`openssl dgst -sha256 .cloudenv-secret-key`
   	    read -ra ADDR <<< "$sha"
   		app=`curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/apps?name=$name&sha=${ADDR[1]}"`
+  		secretkey=`tail -1 .cloudenv-secret-key`
+  		openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
+  		curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/envs?app=$name&environment=$environment"
+  		rm /tmp/cloudenv-edit*
   		if [ "$app" != 200 ]
   		then
   			echo
@@ -378,16 +467,16 @@ cloudenv_init_command() {
   	sha=`openssl dgst -sha256 .cloudenv-secret-key`
       read -ra ADDR <<< "$sha"
   	curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/apps?name=$name&sha=${ADDR[1]}" > /tmp/cloudenv-app
-  	if [ "$app" != 200 ]
+  	if [ "$app" == 201 ]
   	then
-  		echo
-  		echo "ERROR ($app): This app name already exists, please choose a different one and try again."
-  		exit
-  	else
   		echo
   		echo "SUCCESS: You have created the app '$name' in CloudEnv"
   		echo
   		echo "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
+  	else
+  		echo
+  		echo "ERROR ($app): This app name already exists, please choose a different one and try again."
+  		exit
   	fi
   fi
 }
@@ -428,21 +517,113 @@ cloudenv_edit_command() {
   
   editor="${EDITOR:-nano}"
   bearer=`cat ~/.cloudenvrc`
-  project=`head -1 .cloudenv-secret-key`
+  app=`head -1 .cloudenv-secret-key`
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
+  tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
   
-  curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?app=$app&environment=$environment" > /tmp/cloudenv-edit
+  curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > "$tempdir/cloudenv-edit-$environment-encrypted"
   
-  openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
+  if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
+  then
+  	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment"
+  else
+  	touch "$tempdir/cloudenv-edit-$environment"
+  fi
   
-  "$editor" /tmp/cloudenv-edit-decrypted
+  "$editor" "$tempdir/cloudenv-edit-$environment"
   
-  openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
+  openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted"
   
-  curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/envs?app=$app&environment=$environment"
+  curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > /dev/null
   
-  rm /tmp/cloudenv-edit*
+  rm -rf "$tempdir"
+}
+
+# :command.function
+cloudenv_show_command() {
+  # :src/show_command.sh
+  if [ ! -f ~/.cloudenvrc ]
+  then
+  	echo
+  	echo "Not logged in"
+  	echo
+  	echo "Please run: cloudenv login"
+  	echo
+  	exit
+  fi
+  
+  if [ ! -f .cloudenv-secret-key ]
+  then
+  	echo
+  	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
+  	echo
+  	echo "Please run: cloudenv init"
+  	echo
+  	echo "Or cd into the root directory of your app to make env edits"
+  	echo
+  	exit
+  fi
+  
+  editor="${EDITOR:-nano}"
+  bearer=`cat ~/.cloudenvrc`
+  app=`head -1 .cloudenv-secret-key`
+  secretkey=`tail -1 .cloudenv-secret-key`
+  environment="${args[environment]}"
+  tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
+  
+  curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > "$tempdir/cloudenv-edit-$environment-encrypted"
+  
+  if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
+  then
+  	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment"
+  	cat "$tempdir/cloudenv-edit-$environment"
+  fi
+  
+  rm -rf "$tempdir"
+}
+
+# :command.function
+cloudenv_push_command() {
+  # :src/push_command.sh
+  if [ ! -f ~/.cloudenvrc ]
+  then
+  	echo
+  	echo "Not logged in"
+  	echo
+  	echo "Please run: cloudenv login"
+  	echo
+  	exit
+  fi
+  
+  if [ ! -f .cloudenv-secret-key ]
+  then
+  	echo
+  	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
+  	echo
+  	echo "Please run: cloudenv init"
+  	echo
+  	echo "Or cd into the root directory of your app to make env edits"
+  	echo
+  	exit
+  fi
+  
+  bearer=`cat ~/.cloudenvrc`
+  app=`head -1 .cloudenv-secret-key`
+  secretkey=`tail -1 .cloudenv-secret-key`
+  environment="${args[environment]}"
+  file="${args[file]}"
+  tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
+  
+  if [ -f "$file" ]
+  then
+  	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$file" -out "$tempdir/cloudenv-edit-$environment-encrypted"
+  	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > /dev/null
+  else
+  	echo "File $file does not exist"
+  fi
+  
+  rm -rf "$tempdir"
 }
 
 # :command.parse_requirements
@@ -495,6 +676,20 @@ parse_requirements() {
     action="edit"
     shift
     cloudenv_edit_parse_requirements "$@"
+    shift $#
+    ;;    
+  
+  show | s )
+    action="show"
+    shift
+    cloudenv_show_parse_requirements "$@"
+    shift $#
+    ;;    
+  
+  push | p )
+    action="push"
+    shift
+    cloudenv_push_parse_requirements "$@"
     shift $#
     ;;    
   
@@ -740,6 +935,107 @@ cloudenv_edit_parse_requirements() {
   [[ -n ${args[environment]} ]] || args[environment]="default"
 }
 
+# :command.parse_requirements
+cloudenv_show_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+  
+  --help | -h )
+    long_usage=yes
+    cloudenv_show_usage
+    exit 1
+    ;;
+  
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  # :command.command_filter
+  action="show"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+  
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+  
+    * )
+      # :command.parse_requirements_case
+      if [[ ! ${args[environment]} ]]; then
+        args[environment]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+      ;;
+  
+    esac
+  done
+  # :command.default_assignments
+  [[ -n ${args[environment]} ]] || args[environment]="default"
+}
+
+# :command.parse_requirements
+cloudenv_push_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+  
+  --help | -h )
+    long_usage=yes
+    cloudenv_push_usage
+    exit 1
+    ;;
+  
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  # :command.command_filter
+  action="push"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+  
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+  
+    * )
+      # :command.parse_requirements_case
+      if [[ ! ${args[environment]} ]]; then
+        args[environment]=$1
+        shift
+      elif [[ ! ${args[file]} ]]; then
+        args[file]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+      ;;
+  
+    esac
+  done
+  # :command.default_assignments
+  [[ -n ${args[environment]} ]] || args[environment]="default"
+}
+
 # :command.initialize
 initialize() {
   version="0.1.0"
@@ -790,6 +1086,22 @@ run() {
       cloudenv_edit_usage
     else
       cloudenv_edit_command
+    fi
+  
+  elif [[ $action == "show" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      cloudenv_show_usage
+    else
+      cloudenv_show_command
+    fi
+  
+  elif [[ $action == "push" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      cloudenv_push_usage
+    else
+      cloudenv_push_command
     fi
   
   elif [[ ${args[--version]} ]]; then

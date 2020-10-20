@@ -47,8 +47,29 @@ commands:
     help: Which environment should these variables be accessible in
     default: default
 
+- name: show
+  short: s
+  help: Show an environmental variable file
+
+  args:
+  - name: environment
+    help: Which environment should these variables be accessible in
+    default: default
+
+- name: push
+  short: p
+  help: Push an existing environmental variable file
+
+  args:
+  - name: environment
+    help: Which environment should these variables be accessible in
+    default: default
+
+  - name: file
+    help: Which file should be pushed
+
   examples:
-  - cloudenv edit default
-  - cloudenv edit staging
-  - cloudenv edit production
+  - cloudenv push default .env
+  - cloudenv push staging .env.staging
+  - cloudenv push production .env.production
 

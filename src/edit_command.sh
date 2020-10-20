@@ -22,18 +22,24 @@ fi
 
 editor="${EDITOR:-nano}"
 bearer=`cat ~/.cloudenvrc`
-project=`head -1 .cloudenv-secret-key`
+app=`head -1 .cloudenv-secret-key`
 secretkey=`tail -1 .cloudenv-secret-key`
 environment="${args[environment]}"
+tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
 
-curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?app=$app&environment=$environment" > /tmp/cloudenv-edit
+curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > "$tempdir/cloudenv-edit-$environment-encrypted"
 
-openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
+if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
+then
+	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment"
+else
+	touch "$tempdir/cloudenv-edit-$environment"
+fi
 
-"$editor" /tmp/cloudenv-edit-decrypted
+"$editor" "$tempdir/cloudenv-edit-$environment"
 
-openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
+openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted"
 
-curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/envs?app=$app&environment=$environment"
+curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > /dev/null
 
-rm /tmp/cloudenv-edit*
+rm -rf "$tempdir"
