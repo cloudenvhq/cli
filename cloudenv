@@ -30,6 +30,7 @@ cloudenv_usage() {
   echo "  edit    Edit an environmental variable file"
   echo "  show    Show an environmental variable file"
   echo "  push    Push an existing environmental variable file"
+  echo "  run     Run a command using some environmental variables"
   echo
 
   if [[ -n $long_usage ]]; then
@@ -287,6 +288,55 @@ cloudenv_push_usage() {
     printf "  cloudenv push default .env\n"
     printf "  cloudenv push staging .env.staging\n"
     printf "  cloudenv push production .env.production\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+cloudenv_run_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "cloudenv run - Run a command using some environmental variables\n"
+    echo 
+  else
+    printf "cloudenv run - Run a command using some environmental variables\n"
+    echo 
+  fi
+
+  printf "Shortcut: r\n"
+  echo
+
+  printf "Usage:\n"
+  printf "  cloudenv run [ENVIRONMENT] [options]\n"
+  printf "  cloudenv run --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+    # :command.usage_flags
+    # :flag.usage
+    echo "  --command, -c COMMAND"
+    printf "    Name of the command to start\n"
+    echo
+    # :command.usage_args
+    printf "Arguments:\n"
+    
+    # :argument.usage
+    echo "  ENVIRONMENT"
+    printf "    Which environment should these variables be accessible in\n"
+    printf "    Default: default\n"
+    echo
+
+    # :command.usage_examples
+    printf "Examples:\n"
+    
+    printf "  cloudenv run default --command your-app-cli-start-command\n"
+    printf "  cloudenv run staging --command your-app-cli-start-command\n"
+    printf "  cloudenv run production --command your-app-cli-start-command\n"
     echo
 
   fi
@@ -626,6 +676,51 @@ cloudenv_push_command() {
   rm -rf "$tempdir"
 }
 
+# :command.function
+cloudenv_run_command() {
+  # :src/run_command.sh
+  if [ ! -f ~/.cloudenvrc ]
+  then
+  	echo
+  	echo "Not logged in"
+  	echo
+  	echo "Please run: cloudenv login"
+  	echo
+  	exit
+  fi
+  
+  if [ ! -f .cloudenv-secret-key ]
+  then
+  	echo
+  	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
+  	echo
+  	echo "Please run: cloudenv init"
+  	echo
+  	echo "Or cd into the root directory of your app to make env edits"
+  	echo
+  	exit
+  fi
+  
+  editor="${EDITOR:-nano}"
+  bearer=`cat ~/.cloudenvrc`
+  app=`head -1 .cloudenv-secret-key`
+  secretkey=`tail -1 .cloudenv-secret-key`
+  environment="${args[environment]}"
+  command="${args[command]}"
+  tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
+  
+  curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > "$tempdir/cloudenv-edit-$environment-encrypted"
+  
+  if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
+  then
+  	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment"
+  	source "$tempdir/cloudenv-edit-$environment"
+  	"$command"
+  fi
+  
+  rm -rf "$tempdir"
+}
+
 # :command.parse_requirements
 parse_requirements() {
   # :command.fixed_flag_filter
@@ -690,6 +785,13 @@ parse_requirements() {
     action="push"
     shift
     cloudenv_push_parse_requirements "$@"
+    shift $#
+    ;;    
+  
+  run | r )
+    action="run"
+    shift
+    cloudenv_run_parse_requirements "$@"
     shift $#
     ;;    
   
@@ -1036,6 +1138,67 @@ cloudenv_push_parse_requirements() {
   [[ -n ${args[environment]} ]] || args[environment]="default"
 }
 
+# :command.parse_requirements
+cloudenv_run_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+  
+  --help | -h )
+    long_usage=yes
+    cloudenv_run_usage
+    exit 1
+    ;;
+  
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  # :command.command_filter
+  action="run"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+    # :flag.case
+    --command | -c )
+      if [[ $2 && $2 != -* ]]; then
+        args[--command]="$2"
+        shift
+        shift
+      else
+        printf "%s\n" "--command requires an argument: --command, -c COMMAND"
+        exit 1
+      fi
+      ;;
+  
+  
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+  
+    * )
+      # :command.parse_requirements_case
+      if [[ ! ${args[environment]} ]]; then
+        args[environment]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+      ;;
+  
+    esac
+  done
+  # :command.default_assignments
+  [[ -n ${args[environment]} ]] || args[environment]="default"
+}
+
 # :command.initialize
 initialize() {
   version="0.1.0"
@@ -1102,6 +1265,14 @@ run() {
       cloudenv_push_usage
     else
       cloudenv_push_command
+    fi
+  
+  elif [[ $action == "run" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      cloudenv_run_usage
+    else
+      cloudenv_run_command
     fi
   
   elif [[ ${args[--version]} ]]; then

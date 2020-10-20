@@ -73,3 +73,23 @@ commands:
   - cloudenv push staging .env.staging
   - cloudenv push production .env.production
 
+- name: run
+  short: r
+  help: Run a command using some environmental variables
+
+  args:
+  - name: environment
+    help: Which environment should these variables be accessible in
+    default: default
+
+  flags:
+  - long: --command
+    short: -c
+    arg: command
+    help: Name of the command to start
+
+  examples:
+  - cloudenv run default --command your-app-cli-start-command
+  - cloudenv run staging --command your-app-cli-start-command
+  - cloudenv run production --command your-app-cli-start-command
+
