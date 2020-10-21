@@ -23,7 +23,7 @@ then
 		curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?app=$name&environment=$environment" > /tmp/cloudenv-edit
 		openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
 		head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
-		base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 >> .cloudenv-secret-key-new
+		base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key-new
 		echo >> .cloudenv-secret-key-new
 		mv .cloudenv-secret-key-new .cloudenv-secret-key
 		sha=`openssl dgst -sha256 .cloudenv-secret-key`
@@ -63,7 +63,7 @@ else
 		exit
 	fi
 	echo $name > .cloudenv-secret-key
-	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 >> .cloudenv-secret-key
+	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key
 	echo >> .cloudenv-secret-key
 	sha=`openssl dgst -sha256 .cloudenv-secret-key`
     read -ra ADDR <<< "$sha"
