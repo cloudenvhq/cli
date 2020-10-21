@@ -31,11 +31,11 @@ process.env.AWS_SECRET_ACCESS_KEY
 ## Ruby CloudEnv
 
 ```console
-$ gem install cloudenv
+$ gem install cloudenv-hq
 ```
 
 ```ruby
-gem "cloudenv"
+gem "cloudenv-hq"
 
 ENV.fetch("AWS_SECRET_ACCESS_KEY")
 ```
