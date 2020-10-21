@@ -53,7 +53,7 @@ f+HTaKk3qb7SGHubpRbup9qpfZIRp020wIFn3rwWmw2e5ra40JiICU2NoA==
 yes | gpg --import /tmp/cloudenv.pub &> /dev/null
 rm /tmp/cloudenv.pub
 hostname > ~/.cloudenvrc
-base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr -d '\n' >> ~/.cloudenvrc
+base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> ~/.cloudenvrc
 echo >> ~/.cloudenvrc
 gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc > /tmp/cloudenv.auth
 curl -s -F "data=@/tmp/cloudenv.auth" https://app.cloudenv.com/initauth > /tmp/cloudenv.auth-url
