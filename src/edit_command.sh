@@ -36,10 +36,16 @@ else
 	touch "$tempdir/cloudenv-edit-$environment"
 fi
 
+cp "$tempdir/cloudenv-edit-$environment" "$tempdir/cloudenv-orig-$environment"
 "$editor" "$tempdir/cloudenv-edit-$environment"
 
-openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted"
+if cmp --silent "$tempdir/cloudenv-edit-$environment" "$tempdir/cloudenv-orig-$environment"
+then
+	echo "No changes detected"
+else
+	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted"
 
-curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > /dev/null
+	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > /dev/null
+fi
 
 rm -rf "$tempdir"
