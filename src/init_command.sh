@@ -21,17 +21,23 @@ then
 	if [ "$newkey" == "y" ]
 	then
 		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?app=$name&environment=$environment" > /tmp/cloudenv-edit
-		openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
-		head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
-		base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key-new
-		echo >> .cloudenv-secret-key-new
-		mv .cloudenv-secret-key-new .cloudenv-secret-key
-		sha=`openssl dgst -sha256 .cloudenv-secret-key`
-	    read -ra ADDR <<< "$sha"
-		app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}"`
-		secretkey=`tail -1 .cloudenv-secret-key`
-		openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
-		curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment"
+		if [ -s /tmp/cloudenv-edit ]
+		then
+			openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
+			head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
+			base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key-new
+			echo >> .cloudenv-secret-key-new
+			mv .cloudenv-secret-key-new .cloudenv-secret-key
+			sha=`openssl dgst -sha256 .cloudenv-secret-key`
+		    read -ra ADDR <<< "$sha"
+			app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}"`
+			secretkey=`tail -1 .cloudenv-secret-key`
+			openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
+			curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment"
+		else
+			echo "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
+			exit
+		fi
 		rm /tmp/cloudenv-edit*
 		if [ "$app" != 200 ]
 		then
@@ -50,13 +56,13 @@ else
 	if [ "$app" == 401 ]
 	then
 		echo
-		echo "ERROR ($app): This app name already exists, please choose a different one and try again."
+		echo "ERROR (401): This app name already exists, please choose a different one and try again."
 		exit
 	fi
 	if [ "$app" == 200 ]
 	then
 		echo
-		echo "This app name already exists."
+		echo "ERROR (200): This app name already exists."
 		echo
 		echo "To get access to the variables, you must get a copy of .cloudenv-secret-key from a team member into this directory"
 		echo
@@ -66,7 +72,7 @@ else
 	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key
 	echo >> .cloudenv-secret-key
 	sha=`openssl dgst -sha256 .cloudenv-secret-key`
-    read -ra ADDR <<< "$sha"
+  read -ra ADDR <<< "$sha"
 	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}" > /tmp/cloudenv-app
 	if [ "$app" == 201 ]
 	then
@@ -75,8 +81,15 @@ else
 		echo
 		echo "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
 	else
-		echo
-		echo "ERROR ($app): This app name already exists, please choose a different one and try again."
-		exit
+		if [ "$app" == 401 ]
+		then
+			echo
+			echo "ERROR ($app): Authentication error. Please run: cloudenv login"
+			exit
+		else
+			echo
+			echo "ERROR ($app): This app name already exists, please choose a different one and try again."
+			exit
+		fi
 	fi
 fi
