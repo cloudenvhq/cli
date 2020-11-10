@@ -20,7 +20,7 @@ then
 	read -p "Generate a new secret key for this project? (N/y): " newkey
 	if [ "$newkey" == "y" ]
 	then
-		curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?app=$name&environment=$environment" > /tmp/cloudenv-edit
+		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?app=$name&environment=$environment" > /tmp/cloudenv-edit
 		openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
 		head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
 		base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key-new
@@ -28,10 +28,10 @@ then
 		mv .cloudenv-secret-key-new .cloudenv-secret-key
 		sha=`openssl dgst -sha256 .cloudenv-secret-key`
 	    read -ra ADDR <<< "$sha"
-		app=`curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/apps?name=$name&sha=${ADDR[1]}"`
+		app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}"`
 		secretkey=`tail -1 .cloudenv-secret-key`
 		openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
-		curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "https://app.cloudenv.com/api/v1/envs?app=$name&environment=$environment"
+		curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment"
 		rm /tmp/cloudenv-edit*
 		if [ "$app" != 200 ]
 		then
@@ -46,7 +46,7 @@ then
 	fi
 else
 	read -p "Name of App: " name
-	app=`curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/apps?name=$name"`
+	app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name"`
 	if [ "$app" == 401 ]
 	then
 		echo
@@ -67,7 +67,7 @@ else
 	echo >> .cloudenv-secret-key
 	sha=`openssl dgst -sha256 .cloudenv-secret-key`
     read -ra ADDR <<< "$sha"
-	curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/apps?name=$name&sha=${ADDR[1]}" > /tmp/cloudenv-app
+	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}" > /tmp/cloudenv-app
 	if [ "$app" == 201 ]
 	then
 		echo

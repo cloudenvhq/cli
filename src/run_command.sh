@@ -28,7 +28,7 @@ environment="${args[environment]}"
 command="${args[command]}"
 tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
 
-curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > "$tempdir/cloudenv-edit-$environment-encrypted"
+curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment" > "$tempdir/cloudenv-edit-$environment-encrypted"
 
 if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
 then

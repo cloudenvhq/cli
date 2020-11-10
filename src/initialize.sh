@@ -4,3 +4,5 @@
 # CONFIG_FILE=settings.ini
 #
 # Feel free to empty (but not delete) this file.
+
+BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}

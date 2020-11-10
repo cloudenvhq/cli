@@ -20,14 +20,14 @@ then
 	exit
 fi
 
+tempdir=${CLOUDENV_TMPDIR:-`mktemp -d ~/.tmp.XXXXXXXX`}
 editor="${EDITOR:-nano}"
 bearer=`cat ~/.cloudenvrc`
 app=`head -1 .cloudenv-secret-key`
 secretkey=`tail -1 .cloudenv-secret-key`
 environment="${args[environment]}"
-tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
 
-curl -s -H "Authorization: Bearer $bearer" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > "$tempdir/cloudenv-edit-$environment-encrypted"
+curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment" > "$tempdir/cloudenv-edit-$environment-encrypted"
 
 if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
 then
@@ -45,7 +45,7 @@ then
 else
 	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted"
 
-	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "https://app.cloudenv.com/api/v1/envs?name=$app&environment=$environment" > /dev/null
+	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment" > /dev/null
 fi
 
 rm -rf "$tempdir"
