@@ -626,7 +626,7 @@ cloudenv_edit_command() {
   
   if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
   then
-  	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment"
+  	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment" 2> /dev/null
   else
   	touch "$tempdir/cloudenv-edit-$environment"
   fi
@@ -638,7 +638,7 @@ cloudenv_edit_command() {
   then
   	echo "No changes detected"
   else
-  	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted"
+  	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted" 2> /dev/null
   
   	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment" > /dev/null
   fi
@@ -683,8 +683,7 @@ cloudenv_show_command() {
   
   	if [ -s "$tempdir/cloudenv-show-default-encrypted" ]
   	then
-  		openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-default-encrypted" -out "$tempdir/cloudenv-show-default"
-  		cat "$tempdir/cloudenv-show-default"
+  		openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-default-encrypted" 2> /dev/null
   	fi
   fi
   
@@ -692,8 +691,7 @@ cloudenv_show_command() {
   
   if [ -s "$tempdir/cloudenv-show-$environment-encrypted" ]
   then
-  	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-$environment-encrypted" -out "$tempdir/cloudenv-show-$environment"
-  	cat "$tempdir/cloudenv-show-$environment"
+  	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-$environment-encrypted" 2> /dev/null
   fi
   
   rm -rf "$tempdir"
@@ -733,7 +731,7 @@ cloudenv_push_command() {
   
   if [ -f "$file" ]
   then
-  	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$file" -out "$tempdir/cloudenv-edit-$environment-encrypted"
+  	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$file" -out "$tempdir/cloudenv-edit-$environment-encrypted" 2> /dev/null
   	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment" > /dev/null
   else
   	echo "File $file does not exist"
@@ -779,7 +777,7 @@ cloudenv_run_command() {
   
   if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
   then
-  	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment"
+  	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment" 2> /dev/null
   	bash -c "source '$tempdir/cloudenv-edit-$environment'; rm -rf $tempdir; $command"
   else
   	bash -c "$command"
