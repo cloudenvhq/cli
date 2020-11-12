@@ -31,7 +31,7 @@ curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&envi
 
 if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
 then
-	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment"
+	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment" 2> /dev/null
 else
 	touch "$tempdir/cloudenv-edit-$environment"
 fi
@@ -43,7 +43,7 @@ if cmp --silent "$tempdir/cloudenv-edit-$environment" "$tempdir/cloudenv-orig-$e
 then
 	echo "No changes detected"
 else
-	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted"
+	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted" 2> /dev/null
 
 	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment" > /dev/null
 fi

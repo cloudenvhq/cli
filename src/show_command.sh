@@ -32,8 +32,7 @@ then
 
 	if [ -s "$tempdir/cloudenv-show-default-encrypted" ]
 	then
-		openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-default-encrypted" -out "$tempdir/cloudenv-show-default"
-		cat "$tempdir/cloudenv-show-default"
+		openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-default-encrypted" 2> /dev/null
 	fi
 fi
 
@@ -41,8 +40,7 @@ curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&envi
 
 if [ -s "$tempdir/cloudenv-show-$environment-encrypted" ]
 then
-	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-$environment-encrypted" -out "$tempdir/cloudenv-show-$environment"
-	cat "$tempdir/cloudenv-show-$environment"
+	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-$environment-encrypted" 2> /dev/null
 fi
 
 rm -rf "$tempdir"
