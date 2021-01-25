@@ -3,7 +3,7 @@
 Welcome, here's how easy it is to get started with CloudEnv...
 
 ```console
-$ curl -Ls https://raw.githubusercontent.com/cloudenvhq/install/main/install.sh | sh
+$ bash -c "$(curl -fsSL https://raw.githubusercontent.com/cloudenvhq/install/main/install.sh)"
 $ cloudenv login
 $ cd /var/apps/sampleapp
 $ cloudenv init                         # this creates a secret 256-bit key for the project
