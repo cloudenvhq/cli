@@ -19,11 +19,11 @@ $                                       #   and instantly distributed to other t
 ## Node CloudEnv
 
 ```console
-$ npm install cloudenv --save
+$ npm install cloudenv-hq --save
 ```
 
-```ruby
-require("cloudenv")
+```javascript
+require("cloudenv-hq")
 
 process.env.AWS_SECRET_ACCESS_KEY
 ```
