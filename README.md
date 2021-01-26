@@ -54,15 +54,3 @@ cloudenv.load_cloudenv()
 os.getenv("AWS_SECRET_ACCESS_KEY")
 ```
 
-## PHP CloudEnv
-
-```console
-$ composer require cloudenvhq/cloudenv
-```
-
-```php
-<?php
-require 'vendor/autoload.php'; // include Composer's autoloader
-
-$_ENV["AWS_SECRET_ACCESS_KEY"]
-```
