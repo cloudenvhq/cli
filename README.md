@@ -48,7 +48,9 @@ $ pip install cloudenv
 
 ```python
 import cloudenv
-my_var = cloudenv.get("AWS_SECRET_ACCESS_KEY")
+
+cloudenv.load_cloudenv()
+os.getenv("AWS_SECRET_ACCESS_KEY")
 ```
 
 ## PHP CloudEnv
