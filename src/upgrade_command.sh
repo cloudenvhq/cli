@@ -1,1 +1,1 @@
-curl -Ls https://cloudenv.com/install.txt | sh
+bash -c "$(curl -fsSL https://app.cloudenv.com/install.sh)"

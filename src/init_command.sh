@@ -87,9 +87,16 @@ else
 			echo "ERROR ($app): Authentication error. Please run: cloudenv login"
 			exit
 		else
-			echo
-			echo "ERROR ($app): This app name already exists, please choose a different one and try again."
-			exit
+			if [ "$app" == 404 ]
+			then
+				echo
+				echo "ERROR ($app): The CLI does not yet support accounts that are part of multiple organizations, please create this app at app.cloudenv.com"
+				exit
+			else
+				echo
+				echo "ERROR ($app): There was a problem, please try to create the app at app.cloudenv.com"
+				exit
+			fi
 		fi
 	fi
 fi
