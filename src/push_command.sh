@@ -20,7 +20,7 @@ then
 	exit
 fi
 
-bearer=`cat ~/.cloudenvrc`
+bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
 app=`head -1 .cloudenv-secret-key`
 secretkey=`tail -1 .cloudenv-secret-key`
 environment="${args[environment]}"

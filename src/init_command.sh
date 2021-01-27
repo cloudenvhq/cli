@@ -8,7 +8,7 @@ then
 	exit
 fi
 
-bearer=`cat ~/.cloudenvrc`
+bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
 
 if [ -f .cloudenv-secret-key ]
 then
@@ -52,7 +52,16 @@ then
 	fi
 else
 	read -p "Name of App: " name
-	app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name"`
+	# first, strip dashes
+	slug=${name//-/}
+	# next, replace spaces with underscores
+	slug=${slug// /-}
+	# now, clean out anything that's not alphanumeric or an underscore
+	slug=${slug//[^a-zA-Z0-9\-]/}
+	# finally, lowercase with TR
+	slug=`echo -n $slug | tr A-Z a-z`
+
+	app=`curl -s --data-urlencode "slug=$clean" --data-urlencode "name=$name" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
 	if [ "$app" == 401 ]
 	then
 		echo
@@ -68,7 +77,7 @@ else
 		echo
 		exit
 	fi
-	echo $name > .cloudenv-secret-key
+	echo $slug > .cloudenv-secret-key
 	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key
 	echo >> .cloudenv-secret-key
 	sha=`openssl dgst -sha256 .cloudenv-secret-key`

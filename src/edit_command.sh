@@ -22,7 +22,7 @@ fi
 
 tempdir=${CLOUDENV_TMPDIR:-`mktemp -d ~/.tmp.XXXXXXXX`}
 editor="${EDITOR:-nano}"
-bearer=`cat ~/.cloudenvrc`
+bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
 app=`head -1 .cloudenv-secret-key`
 secretkey=`tail -1 .cloudenv-secret-key`
 environment="${args[environment]}"

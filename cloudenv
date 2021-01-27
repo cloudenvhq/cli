@@ -494,7 +494,7 @@ cloudenv_init_command() {
   	exit
   fi
   
-  bearer=`cat ~/.cloudenvrc`
+  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
   
   if [ -f .cloudenv-secret-key ]
   then
@@ -538,7 +538,16 @@ cloudenv_init_command() {
   	fi
   else
   	read -p "Name of App: " name
-  	app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name"`
+  	# first, strip dashes
+  	slug=${name//-/}
+  	# next, replace spaces with underscores
+  	slug=${slug// /-}
+  	# now, clean out anything that's not alphanumeric or an underscore
+  	slug=${slug//[^a-zA-Z0-9\-]/}
+  	# finally, lowercase with TR
+  	slug=`echo -n $slug | tr A-Z a-z`
+  
+  	app=`curl -s --data-urlencode "slug=$clean" --data-urlencode "name=$name" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
   	if [ "$app" == 401 ]
   	then
   		echo
@@ -554,7 +563,7 @@ cloudenv_init_command() {
   		echo
   		exit
   	fi
-  	echo $name > .cloudenv-secret-key
+  	echo $slug > .cloudenv-secret-key
   	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key
   	echo >> .cloudenv-secret-key
   	sha=`openssl dgst -sha256 .cloudenv-secret-key`
@@ -624,7 +633,7 @@ cloudenv_edit_command() {
   
   tempdir=${CLOUDENV_TMPDIR:-`mktemp -d ~/.tmp.XXXXXXXX`}
   editor="${EDITOR:-nano}"
-  bearer=`cat ~/.cloudenvrc`
+  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
   app=`head -1 .cloudenv-secret-key`
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
@@ -678,7 +687,7 @@ cloudenv_show_command() {
   	exit
   fi
   
-  bearer=`cat ~/.cloudenvrc`
+  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
   app=`head -1 .cloudenv-secret-key`
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
@@ -729,7 +738,7 @@ cloudenv_push_command() {
   	exit
   fi
   
-  bearer=`cat ~/.cloudenvrc`
+  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
   app=`head -1 .cloudenv-secret-key`
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
@@ -773,7 +782,7 @@ cloudenv_run_command() {
   fi
   
   editor="${EDITOR:-nano}"
-  bearer=`cat ~/.cloudenvrc`
+  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
   app=`head -1 .cloudenv-secret-key`
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
