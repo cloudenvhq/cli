@@ -52,11 +52,9 @@ then
 	fi
 else
 	read -p "Name of App: " name
-	# first, strip dashes
-	slug=${name//-/}
-	# next, replace spaces with underscores
-	slug=${slug// /-}
-	# now, clean out anything that's not alphanumeric or an underscore
+	# first, replace spaces with dashes
+	slug=${name// /-}
+	# now, clean out anything that's not alphanumeric or a dash
 	slug=${slug//[^a-zA-Z0-9\-]/}
 	# finally, lowercase with TR
 	slug=`echo -n $slug | tr A-Z a-z`
