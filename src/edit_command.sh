@@ -27,7 +27,7 @@ app=`head -1 .cloudenv-secret-key`
 secretkey=`tail -1 .cloudenv-secret-key`
 environment="${args[environment]}"
 
-curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment" > "$tempdir/cloudenv-edit-$environment-encrypted"
+curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > "$tempdir/cloudenv-edit-$environment-encrypted"
 
 if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
 then
@@ -45,7 +45,7 @@ then
 else
 	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted" 2> /dev/null
 
-	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment" > /dev/null
+	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > /dev/null
 fi
 
 rm -rf "$tempdir"

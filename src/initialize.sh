@@ -6,3 +6,4 @@
 # Feel free to empty (but not delete) this file.
 
 BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
+CLOUDENV_CLI_VERSION="0.1.0"

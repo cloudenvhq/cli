@@ -20,7 +20,7 @@ then
 	read -p "Generate a new secret key for this project? (N/y): " newkey
 	if [ "$newkey" == "y" ]
 	then
-		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?app=$name&environment=$environment" > /tmp/cloudenv-edit
+		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > /tmp/cloudenv-edit
 		if [ -s /tmp/cloudenv-edit ]
 		then
 			openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
@@ -33,7 +33,7 @@ then
 			app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}"`
 			secretkey=`tail -1 .cloudenv-secret-key`
 			openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
-			curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment"
+			curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli"
 		else
 			echo "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
 			exit
@@ -80,7 +80,7 @@ else
 	echo >> .cloudenv-secret-key
 	sha=`openssl dgst -sha256 .cloudenv-secret-key`
   read -ra ADDR <<< "$sha"
-	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}" > /tmp/cloudenv-app
+	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}&version=$CLOUDENV_CLI_VERSION&lang=cli" > /tmp/cloudenv-app
 	if [ "$app" == 201 ]
 	then
 		echo
