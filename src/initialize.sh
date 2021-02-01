@@ -7,4 +7,4 @@
 
 BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
 
-tempdir=$(dirname $(mktemp -u))
+tempdir=$(mktemp -d)
