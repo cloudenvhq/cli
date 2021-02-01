@@ -24,11 +24,10 @@ bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
 app=`head -1 .cloudenv-secret-key`
 secretkey=`tail -1 .cloudenv-secret-key`
 environment="${args[environment]}"
-tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
 
 if [ "$environment" != "default" ]
 then
-	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=default&version=$CLOUDENV_CLI_VERSION&lang=cli" > "$tempdir/cloudenv-show-default-encrypted"
+	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=default&version=$version&lang=cli" > "$tempdir/cloudenv-show-default-encrypted"
 
 	if [ -s "$tempdir/cloudenv-show-default-encrypted" ]
 	then
@@ -36,7 +35,7 @@ then
 	fi
 fi
 
-curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > "$tempdir/cloudenv-show-$environment-encrypted"
+curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > "$tempdir/cloudenv-show-$environment-encrypted"
 
 if [ -s "$tempdir/cloudenv-show-$environment-encrypted" ]
 then

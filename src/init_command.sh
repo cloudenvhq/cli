@@ -20,10 +20,10 @@ then
 	read -p "Generate a new secret key for this project? (N/y): " newkey
 	if [ "$newkey" == "y" ]
 	then
-		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > /tmp/cloudenv-edit
-		if [ -s /tmp/cloudenv-edit ]
+		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$version&lang=cli" > "$tempdir/cloudenv-edit"
+		if [ -s "$tempdir/cloudenv-edit" ]
 		then
-			openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
+			openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit" -out "$tempdir/cloudenv-edit-decrypted"
 			head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
 			base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key-new
 			echo >> .cloudenv-secret-key-new
@@ -32,13 +32,13 @@ then
 		    read -ra ADDR <<< "$sha"
 			app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}"`
 			secretkey=`tail -1 .cloudenv-secret-key`
-			openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
-			curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli"
+			openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-decrypted" -out "$tempdir/cloudenv-edit"
+			curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$version&lang=cli"
 		else
 			echo "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
 			exit
 		fi
-		rm /tmp/cloudenv-edit*
+		rm "$tempdir/cloudenv-edit*"
 		if [ "$app" != 200 ]
 		then
 			echo
@@ -59,7 +59,7 @@ else
 	# finally, lowercase with TR
 	slug=`echo -n $slug | tr A-Z a-z`
 
-	app=`curl -s --data-urlencode "slug=$clean" --data-urlencode "name=$name" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+	app=`curl -s --data-urlencode "slug=$clean" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
 	if [ "$app" == 401 ]
 	then
 		echo
@@ -80,7 +80,7 @@ else
 	echo >> .cloudenv-secret-key
 	sha=`openssl dgst -sha256 .cloudenv-secret-key`
   read -ra ADDR <<< "$sha"
-	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}&version=$CLOUDENV_CLI_VERSION&lang=cli" > /tmp/cloudenv-app
+	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&slug=$slug&sha=${ADDR[1]}&version=$version&lang=cli" > "$tempdir/cloudenv-app"
 	if [ "$app" == 201 ]
 	then
 		echo
@@ -101,7 +101,7 @@ else
 				exit
 			else
 				echo
-				echo "ERROR ($app): There was a problem, please try to create the app at app.cloudenv.com"
+				echo "ERROR ($app): There was a problem creating app '$name' with slug '$slug'. Please try to create the app at app.cloudenv.com"
 				exit
 			fi
 		fi

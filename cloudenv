@@ -439,21 +439,21 @@ cloudenv_login_command() {
   wq0vssRcrb4ke22j0CByOATp+y4SfU/nODBeENIZ807MRtktIun4kLW2FahjryrN
   f+HTaKk3qb7SGHubpRbup9qpfZIRp020wIFn3rwWmw2e5ra40JiICU2NoA==
   =YJ9q
-  -----END PGP PUBLIC KEY BLOCK-----" > /tmp/cloudenv.pub
+  -----END PGP PUBLIC KEY BLOCK-----" > "$tempdir/cloudenv.pub"
   
-  yes | gpg --import /tmp/cloudenv.pub &> /dev/null
-  rm /tmp/cloudenv.pub
+  yes | gpg --import "$tempdir/cloudenv.pub" &> /dev/null
+  rm "$tempdir/cloudenv.pub"
   hostname > ~/.cloudenvrc
   base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> ~/.cloudenvrc
   echo >> ~/.cloudenvrc
-  gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc > /tmp/cloudenv.auth
-  curl -s -F "data=@/tmp/cloudenv.auth" "$BASE_URL/initauth" > /tmp/cloudenv.auth-url
-  rm /tmp/cloudenv.auth
+  gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc > "$tempdir/cloudenv.auth"
+  curl -s -F "data=@$tempdir/cloudenv.auth" "$BASE_URL/initauth" > "$tempdir/cloudenv.auth-url"
+  rm "$tempdir/cloudenv.auth"
   
   echo
   echo "Please visit this url and login or register to authorize this computer: "
   echo
-  cat /tmp/cloudenv.auth-url
+  cat "$tempdir/cloudenv.auth-url"
   echo
   echo
   
@@ -506,10 +506,10 @@ cloudenv_init_command() {
   	read -p "Generate a new secret key for this project? (N/y): " newkey
   	if [ "$newkey" == "y" ]
   	then
-  		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > /tmp/cloudenv-edit
-  		if [ -s /tmp/cloudenv-edit ]
+  		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$version&lang=cli" > "$tempdir/cloudenv-edit"
+  		if [ -s "$tempdir/cloudenv-edit" ]
   		then
-  			openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in /tmp/cloudenv-edit -out /tmp/cloudenv-edit-decrypted
+  			openssl enc -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit" -out "$tempdir/cloudenv-edit-decrypted"
   			head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
   			base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key-new
   			echo >> .cloudenv-secret-key-new
@@ -518,13 +518,13 @@ cloudenv_init_command() {
   		    read -ra ADDR <<< "$sha"
   			app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}"`
   			secretkey=`tail -1 .cloudenv-secret-key`
-  			openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in /tmp/cloudenv-edit-decrypted -out /tmp/cloudenv-edit
-  			curl -s -H "Authorization: Bearer $bearer" -F "data=@/tmp/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli"
+  			openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-decrypted" -out "$tempdir/cloudenv-edit"
+  			curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$version&lang=cli"
   		else
   			echo "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
   			exit
   		fi
-  		rm /tmp/cloudenv-edit*
+  		rm "$tempdir/cloudenv-edit*"
   		if [ "$app" != 200 ]
   		then
   			echo
@@ -545,7 +545,7 @@ cloudenv_init_command() {
   	# finally, lowercase with TR
   	slug=`echo -n $slug | tr A-Z a-z`
   
-  	app=`curl -s --data-urlencode "slug=$clean" --data-urlencode "name=$name" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+  	app=`curl -s --data-urlencode "slug=$clean" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
   	if [ "$app" == 401 ]
   	then
   		echo
@@ -566,7 +566,7 @@ cloudenv_init_command() {
   	echo >> .cloudenv-secret-key
   	sha=`openssl dgst -sha256 .cloudenv-secret-key`
     read -ra ADDR <<< "$sha"
-  	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}&version=$CLOUDENV_CLI_VERSION&lang=cli" > /tmp/cloudenv-app
+  	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&slug=$slug&sha=${ADDR[1]}&version=$version&lang=cli" > "$tempdir/cloudenv-app"
   	if [ "$app" == 201 ]
   	then
   		echo
@@ -587,7 +587,7 @@ cloudenv_init_command() {
   				exit
   			else
   				echo
-  				echo "ERROR ($app): There was a problem, please try to create the app at app.cloudenv.com"
+  				echo "ERROR ($app): There was a problem creating app '$name' with slug '$slug'. Please try to create the app at app.cloudenv.com"
   				exit
   			fi
   		fi
@@ -629,14 +629,13 @@ cloudenv_edit_command() {
   	exit
   fi
   
-  tempdir=${CLOUDENV_TMPDIR:-`mktemp -d ~/.tmp.XXXXXXXX`}
   editor="${EDITOR:-nano}"
   bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
   app=`head -1 .cloudenv-secret-key`
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
   
-  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > "$tempdir/cloudenv-edit-$environment-encrypted"
+  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > "$tempdir/cloudenv-edit-$environment-encrypted"
   
   if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
   then
@@ -654,7 +653,7 @@ cloudenv_edit_command() {
   else
   	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted" 2> /dev/null
   
-  	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > /dev/null
+  	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > /dev/null
   fi
   
   rm -rf "$tempdir"
@@ -689,11 +688,10 @@ cloudenv_show_command() {
   app=`head -1 .cloudenv-secret-key`
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
-  tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
   
   if [ "$environment" != "default" ]
   then
-  	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=default&version=$CLOUDENV_CLI_VERSION&lang=cli" > "$tempdir/cloudenv-show-default-encrypted"
+  	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=default&version=$version&lang=cli" > "$tempdir/cloudenv-show-default-encrypted"
   
   	if [ -s "$tempdir/cloudenv-show-default-encrypted" ]
   	then
@@ -701,7 +699,7 @@ cloudenv_show_command() {
   	fi
   fi
   
-  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > "$tempdir/cloudenv-show-$environment-encrypted"
+  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > "$tempdir/cloudenv-show-$environment-encrypted"
   
   if [ -s "$tempdir/cloudenv-show-$environment-encrypted" ]
   then
@@ -785,9 +783,8 @@ cloudenv_run_command() {
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
   command="${args[command]}"
-  tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
   
-  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$CLOUDENV_CLI_VERSION&lang=cli" > "$tempdir/cloudenv-edit-$environment-encrypted"
+  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > "$tempdir/cloudenv-edit-$environment-encrypted"
   
   if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
   then
@@ -1328,7 +1325,7 @@ cloudenv_upgrade_parse_requirements() {
 
 # :command.initialize
 initialize() {
-  version="0.1.0"
+  version="0.1.2"
   long_usage=''
   set -e  
 
@@ -1341,7 +1338,8 @@ initialize() {
   # Feel free to empty (but not delete) this file.
   
   BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
-  CLOUDENV_CLI_VERSION="0.1.0"
+  
+  tempdir=$(dirname $(mktemp -u))
 }
 
 # :command.run

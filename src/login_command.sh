@@ -48,21 +48,21 @@ Zc8lRUSlQW1oH/62WMnWnBv3Bh/PI5fdvqliIxYZEFgZOX89ml6XL+eepo3g/wHK
 wq0vssRcrb4ke22j0CByOATp+y4SfU/nODBeENIZ807MRtktIun4kLW2FahjryrN
 f+HTaKk3qb7SGHubpRbup9qpfZIRp020wIFn3rwWmw2e5ra40JiICU2NoA==
 =YJ9q
------END PGP PUBLIC KEY BLOCK-----" > /tmp/cloudenv.pub
+-----END PGP PUBLIC KEY BLOCK-----" > "$tempdir/cloudenv.pub"
 
-yes | gpg --import /tmp/cloudenv.pub &> /dev/null
-rm /tmp/cloudenv.pub
+yes | gpg --import "$tempdir/cloudenv.pub" &> /dev/null
+rm "$tempdir/cloudenv.pub"
 hostname > ~/.cloudenvrc
 base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> ~/.cloudenvrc
 echo >> ~/.cloudenvrc
-gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc > /tmp/cloudenv.auth
-curl -s -F "data=@/tmp/cloudenv.auth" "$BASE_URL/initauth" > /tmp/cloudenv.auth-url
-rm /tmp/cloudenv.auth
+gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc > "$tempdir/cloudenv.auth"
+curl -s -F "data=@$tempdir/cloudenv.auth" "$BASE_URL/initauth" > "$tempdir/cloudenv.auth-url"
+rm "$tempdir/cloudenv.auth"
 
 echo
 echo "Please visit this url and login or register to authorize this computer: "
 echo
-cat /tmp/cloudenv.auth-url
+cat "$tempdir/cloudenv.auth-url"
 echo
 echo
 
