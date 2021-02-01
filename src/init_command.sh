@@ -59,7 +59,7 @@ else
 	# finally, lowercase with TR
 	slug=`echo -n $slug | tr A-Z a-z`
 
-	app=`curl -s --data-urlencode "slug=$clean" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+	app=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
 	if [ "$app" == 401 ]
 	then
 		echo
