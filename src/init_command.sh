@@ -13,7 +13,7 @@ bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
 if [ -f .cloudenv-secret-key ]
 then
 	name=`head -1 .cloudenv-secret-key`
-	secretkey=`tail -1 .cloudenv-secret-key`
+	secretkey=`head -2 .cloudenv-secret-key | tail -1`
 	environment="default"
 	echo "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
 	echo
@@ -31,7 +31,7 @@ then
 			sha=`openssl dgst -sha256 .cloudenv-secret-key`
 		    read -ra ADDR <<< "$sha"
 			app=`curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&sha=${ADDR[1]}"`
-			secretkey=`tail -1 .cloudenv-secret-key`
+			secretkey=`head -2 .cloudenv-secret-key | tail -1`
 			openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-decrypted" -out "$tempdir/cloudenv-edit"
 			curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$version&lang=cli"
 		else

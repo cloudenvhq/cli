@@ -23,7 +23,7 @@ fi
 editor="${EDITOR:-nano}"
 bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
 app=`head -1 .cloudenv-secret-key`
-secretkey=`tail -1 .cloudenv-secret-key`
+secretkey=`head -2 .cloudenv-secret-key | tail -1`
 environment="${args[environment]}"
 
 curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > "$tempdir/cloudenv-edit-$environment-encrypted"
