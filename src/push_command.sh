@@ -25,7 +25,6 @@ app=`head -1 .cloudenv-secret-key`
 secretkey=`tail -1 .cloudenv-secret-key`
 environment="${args[environment]}"
 file="${args[file]}"
-tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
 
 if [ -f "$file" ]
 then

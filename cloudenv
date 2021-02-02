@@ -545,7 +545,7 @@ cloudenv_init_command() {
   	# finally, lowercase with TR
   	slug=`echo -n $slug | tr A-Z a-z`
   
-  	app=`curl -s --data-urlencode "slug=$clean" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+  	app=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
   	if [ "$app" == 401 ]
   	then
   		echo
@@ -739,7 +739,6 @@ cloudenv_push_command() {
   secretkey=`tail -1 .cloudenv-secret-key`
   environment="${args[environment]}"
   file="${args[file]}"
-  tempdir="$(mktemp -d ~/.tmp.XXXXXXXX)"
   
   if [ -f "$file" ]
   then
@@ -1339,7 +1338,7 @@ initialize() {
   
   BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
   
-  tempdir=$(dirname $(mktemp -u))
+  tempdir=$(mktemp -d)
 }
 
 # :command.run
