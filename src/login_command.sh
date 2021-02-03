@@ -1,3 +1,18 @@
+locked=0
+ip_address=`curl -s ident.me`
+read -p "Do you want to lock these login credentials to your current ip address $ip_address (this provides extra security on server deployments)? (N/y): " newkey
+if [ "$newkey" == "y" ]
+then
+  locked=1
+fi
+
+readonly=0
+read -p "Do you want these login credentials to be read-only? (N/y): " newkey
+if [ "$newkey" == "y" ]
+then
+  readonly=1
+fi
+
 echo "-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBF+Ig/0BEAC5VqhPYi1ol5HJ9/x6kiBFFFvIQm68prmJwuvGVEBXJBNb6z7c
@@ -72,7 +87,7 @@ i=0
 while [[ $data == ?(-)+([0-9]) ]] && [ $i -lt 100 ]
 do
   i=$((i+1))
-  data=`curl -s -F "data=@$HOME/.cloudenvrc" "$BASE_URL/checkauth"`
+  data=`curl -s -F "data=@$HOME/.cloudenvrc" "$BASE_URL/checkauth?locked=$locked&readonly=$readonly&ip_address=$ip_address"`
   sleep 2
 done
 
