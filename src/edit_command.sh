@@ -1,9 +1,9 @@
 if [ ! -f ~/.cloudenvrc ]
 then
 	echo
-	echo "Not logged in"
+	warn "Not logged in"
 	echo
-	echo "Please run: cloudenv login"
+	ohai "Please run: cloudenv login"
 	echo
 	exit
 fi
@@ -11,11 +11,11 @@ fi
 if [ ! -f .cloudenv-secret-key ]
 then
 	echo
-	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
+	warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
 	echo
-	echo "Please run: cloudenv init"
+	ohai "Please run: cloudenv init"
 	echo
-	echo "Or cd into the root directory of your app to make env edits"
+	ohai "Or cd into the root directory of your app to make env edits"
 	echo
 	exit
 fi

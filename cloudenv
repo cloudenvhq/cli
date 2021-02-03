@@ -466,9 +466,9 @@ cloudenv_login_command() {
   rm "$tempdir/cloudenv.auth"
   
   echo
-  echo "Please visit this url and login or register to authorize this computer: "
+  ohai "Please visit this url and login or register to authorize this computer: "
   echo
-  cat "$tempdir/cloudenv.auth-url"
+  ohai "${tty_underline}`cat "$tempdir/cloudenv.auth-url"`${tty_reset}"
   echo
   echo
   
@@ -484,14 +484,14 @@ cloudenv_login_command() {
   
   if [[ $data == ?(-)+([0-9]) ]]
   then
-    echo "Login failed, please try again"
+    warn "Login failed, please try again"
     echo
   else
     read -ra ADDR <<< "$data"
     email="${ADDR[0]}"
     token="${ADDR[1]}"
     echo $token > ~/.cloudenvrc
-    echo "You are now logged in as $email"
+    ohai "You are now logged in as $email"
     echo
   fi
 }
@@ -499,24 +499,14 @@ cloudenv_login_command() {
 # :command.function
 cloudenv_init_command() {
   # :src/init_command.sh
-  if [ ! -f ~/.cloudenvrc ]
-  then
-  	echo
-  	echo "Not logged in"
-  	echo
-  	echo "Please run: cloudenv login"
-  	echo
-  	exit
-  fi
-  
-  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
+  check_logged_in
   
   if [ -f .cloudenv-secret-key ]
   then
   	name=`head -1 .cloudenv-secret-key`
   	secretkey=`head -2 .cloudenv-secret-key | tail -1`
   	environment="default"
-  	echo "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
+  	warn "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
   	echo
   	read -p "Generate a new secret key for this project? (N/y): " newkey
   	if [ "$newkey" == "y" ]
@@ -536,22 +526,33 @@ cloudenv_init_command() {
   			openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-decrypted" -out "$tempdir/cloudenv-edit"
   			curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$version&lang=cli"
   		else
-  			echo "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
+  			warn "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
   			exit
   		fi
   		rm "$tempdir/cloudenv-edit*"
   		if [ "$app" != 200 ]
   		then
   			echo
-  			echo "ERROR ($app): I'm sorry but you do not have access to this app. If you believe this is in error, please contact another team member."
+  			warn "ERROR ($app): I'm sorry but you do not have access to this app. If you believe this is in error, please contact another team member."
   		else
   			echo
-  			echo "SUCCESS: New encryption key generated"
+  			ohai "SUCCESS: New encryption key generated"
   			echo
-  			echo "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
+  			ohai "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
   		fi
   	fi
   else
+  	account_number=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l)
+  
+  	if [ "$account_number" -gt "1" ]
+  	then
+  		ohai "Which account would you like to use from the following?"
+  		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
+  		read -p "Account number (1-$account_number): " account_number
+  		echo
+  		ohai "Got it, now let's name your app."
+  	fi
+  
   	read -p "Name of App: " name
   	# first, replace spaces with dashes
   	slug=${name// /-}
@@ -560,19 +561,19 @@ cloudenv_init_command() {
   	# finally, lowercase with TR
   	slug=`echo -n $slug | tr A-Z a-z`
   
-  	app=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+  	app=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account_number=$account_number" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
   	if [ "$app" == 401 ]
   	then
   		echo
-  		echo "ERROR (401): This app name already exists, please choose a different one and try again."
+  		warn "ERROR (401): This app name already exists, please choose a different one and try again."
   		exit
   	fi
   	if [ "$app" == 200 ]
   	then
   		echo
-  		echo "ERROR (200): This app name already exists."
+  		warn "ERROR (200): This app name already exists."
   		echo
-  		echo "To get access to the variables, you must get a copy of .cloudenv-secret-key from a team member into this directory"
+  		ohai "To get access to the variables, you must get a copy of .cloudenv-secret-key from a team member into this directory"
   		echo
   		exit
   	fi
@@ -581,28 +582,28 @@ cloudenv_init_command() {
   	echo >> .cloudenv-secret-key
   	sha=`openssl dgst -sha256 .cloudenv-secret-key`
     read -ra ADDR <<< "$sha"
-  	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&slug=$slug&sha=${ADDR[1]}&version=$version&lang=cli" > "$tempdir/cloudenv-app"
+  	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?account_number=$account_number&name=$name&slug=$slug&sha=${ADDR[1]}&version=$version&lang=cli" > "$tempdir/cloudenv-app"
   	if [ "$app" == 201 ]
   	then
   		echo
-  		echo "SUCCESS: You have created the app '$name' in CloudEnv"
+  		ohai "SUCCESS: You have created the app '$name' in CloudEnv"
   		echo
-  		echo "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
+  		ohai "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
   	else
   		if [ "$app" == 401 ]
   		then
   			echo
-  			echo "ERROR ($app): Authentication error. Please run: cloudenv login"
+  			warn "ERROR ($app): Authentication error. Please run: cloudenv login"
   			exit
   		else
   			if [ "$app" == 404 ]
   			then
   				echo
-  				echo "ERROR ($app): The CLI does not yet support accounts that are part of multiple organizations, please create this app at app.cloudenv.com"
+  				warn "ERROR ($app): The CLI does not yet support accounts that are part of multiple organizations, please create this app at app.cloudenv.com"
   				exit
   			else
   				echo
-  				echo "ERROR ($app): There was a problem creating app '$name' with slug '$slug'. Please try to create the app at app.cloudenv.com"
+  				warn "ERROR ($app): There was a problem creating app '$name' with slug '$slug'. Please try to create the app at app.cloudenv.com"
   				exit
   			fi
   		fi
@@ -625,9 +626,9 @@ cloudenv_edit_command() {
   if [ ! -f ~/.cloudenvrc ]
   then
   	echo
-  	echo "Not logged in"
+  	warn "Not logged in"
   	echo
-  	echo "Please run: cloudenv login"
+  	ohai "Please run: cloudenv login"
   	echo
   	exit
   fi
@@ -635,11 +636,11 @@ cloudenv_edit_command() {
   if [ ! -f .cloudenv-secret-key ]
   then
   	echo
-  	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
+  	warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
   	echo
-  	echo "Please run: cloudenv init"
+  	ohai "Please run: cloudenv init"
   	echo
-  	echo "Or cd into the root directory of your app to make env edits"
+  	ohai "Or cd into the root directory of your app to make env edits"
   	echo
   	exit
   fi
@@ -677,32 +678,8 @@ cloudenv_edit_command() {
 # :command.function
 cloudenv_show_command() {
   # :src/show_command.sh
-  if [ ! -f ~/.cloudenvrc ]
-  then
-  	echo
-  	echo "Not logged in"
-  	echo
-  	echo "Please run: cloudenv login"
-  	echo
-  	exit
-  fi
-  
-  if [ ! -f .cloudenv-secret-key ]
-  then
-  	echo
-  	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
-  	echo
-  	echo "Please run: cloudenv init"
-  	echo
-  	echo "Or cd into the root directory of your app to make env edits"
-  	echo
-  	exit
-  fi
-  
-  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
-  app=`head -1 .cloudenv-secret-key`
-  secretkey=`head -2 .cloudenv-secret-key | tail -1`
-  environment="${args[environment]}"
+  check_logged_in
+  check_for_project
   
   if [ "$environment" != "default" ]
   then
@@ -711,6 +688,8 @@ cloudenv_show_command() {
   	if [ -s "$tempdir/cloudenv-show-default-encrypted" ]
   	then
   		openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-default-encrypted" 2> /dev/null
+  	else
+  		echo "# ${tty_red}Warning${tty_reset}: Couldn't get the $environment environment from $app"
   	fi
   fi
   
@@ -719,6 +698,8 @@ cloudenv_show_command() {
   if [ -s "$tempdir/cloudenv-show-$environment-encrypted" ]
   then
   	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-$environment-encrypted" 2> /dev/null
+  else
+  	echo "# ${tty_red}Warning${tty_reset}: Couldn't get the $environment environment from $app"
   fi
   
   rm -rf "$tempdir"
@@ -727,40 +708,18 @@ cloudenv_show_command() {
 # :command.function
 cloudenv_push_command() {
   # :src/push_command.sh
-  if [ ! -f ~/.cloudenvrc ]
-  then
-  	echo
-  	echo "Not logged in"
-  	echo
-  	echo "Please run: cloudenv login"
-  	echo
-  	exit
-  fi
+  check_logged_in
+  check_for_project
   
-  if [ ! -f .cloudenv-secret-key ]
-  then
-  	echo
-  	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
-  	echo
-  	echo "Please run: cloudenv init"
-  	echo
-  	echo "Or cd into the root directory of your app to make env edits"
-  	echo
-  	exit
-  fi
-  
-  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
-  app=`head -1 .cloudenv-secret-key`
-  secretkey=`head -2 .cloudenv-secret-key | tail -1`
-  environment="${args[environment]}"
   file="${args[file]}"
   
   if [ -f "$file" ]
   then
   	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$file" -out "$tempdir/cloudenv-edit-$environment-encrypted" 2> /dev/null
   	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment" > /dev/null
+  	ohai "Environment $environment in app $app has been updated"
   else
-  	echo "File $file does not exist"
+  	warn "File $file does not exist"
   fi
   
   rm -rf "$tempdir"
@@ -769,33 +728,9 @@ cloudenv_push_command() {
 # :command.function
 cloudenv_run_command() {
   # :src/run_command.sh
-  if [ ! -f ~/.cloudenvrc ]
-  then
-  	echo
-  	echo "Not logged in"
-  	echo
-  	echo "Please run: cloudenv login"
-  	echo
-  	exit
-  fi
+  check_logged_in
+  check_for_project
   
-  if [ ! -f .cloudenv-secret-key ]
-  then
-  	echo
-  	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
-  	echo
-  	echo "Please run: cloudenv init"
-  	echo
-  	echo "Or cd into the root directory of your app to make env edits"
-  	echo
-  	exit
-  fi
-  
-  editor="${EDITOR:-nano}"
-  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
-  app=`head -1 .cloudenv-secret-key`
-  secretkey=`head -2 .cloudenv-secret-key | tail -1`
-  environment="${args[environment]}"
   command="${args[command]}"
   
   curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > "$tempdir/cloudenv-edit-$environment-encrypted"
@@ -1354,6 +1289,110 @@ initialize() {
   BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
   
   tempdir=$(mktemp -d)
+  editor="${EDITOR:-nano}"
+  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
+  app=`head -1 .cloudenv-secret-key`
+  secretkey=`head -2 .cloudenv-secret-key | tail -1`
+  environment="${args[environment]}"
+  
+  # string formatters
+  if [[ -t 1 ]]; then
+    tty_escape() { printf "\033[%sm" "$1"; }
+  else
+    tty_escape() { :; }
+  fi
+  tty_mkbold() { tty_escape "1;$1"; }
+  tty_underline="$(tty_escape "4;39")"
+  tty_blue="$(tty_mkbold 34)"
+  tty_red="$(tty_mkbold 31)"
+  tty_bold="$(tty_mkbold 39)"
+  tty_reset="$(tty_escape 0)"
+  
+  shell_join() {
+    local arg
+    printf "%s" "$1"
+    shift
+    for arg in "$@"; do
+      printf " "
+      printf "%s" "${arg// /\ }"
+    done
+  }
+  
+  chomp() {
+    printf "%s" "${1/"$'\n'"/}"
+  }
+  
+  ohai() {
+    printf "${tty_blue}==>${tty_bold} %s${tty_reset}\n" "$(shell_join "$@")"
+  }
+  
+  warn() {
+    printf "${tty_red}Warning${tty_reset}: %s\n" "$(chomp "$1")"
+  }
+  
+  execute() {
+    if ! "$@"; then
+      abort "$(printf "Failed during: %s" "$(shell_join "$@")")"
+    fi
+  }
+  
+  check_logged_in() {
+    if [ ! -f ~/.cloudenvrc ]
+    then
+      echo
+      warn "Not logged in"
+      echo
+      ohai "Please run: cloudenv login"
+      echo
+      exit
+    fi
+  }
+  
+  check_for_project() {
+    if [ ! -f .cloudenv-secret-key ]
+    then
+      echo
+      warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
+      echo
+      ohai "Please run: cloudenv init"
+      echo
+      ohai "Or cd into the root directory of your app to make env edits"
+      echo
+      exit
+    fi
+  }
+  
+  getc() {
+    local save_state
+    save_state=$(/bin/stty -g)
+    /bin/stty raw -echo
+    IFS= read -r -n 1 -d '' "$@"
+    /bin/stty "$save_state"
+  }
+  
+  version_gt() {
+    [[ "${1%.*}" -gt "${2%.*}" ]] || [[ "${1%.*}" -eq "${2%.*}" && "${1#*.}" -gt "${2#*.}" ]]
+  }
+  version_ge() {
+    [[ "${1%.*}" -gt "${2%.*}" ]] || [[ "${1%.*}" -eq "${2%.*}" && "${1#*.}" -ge "${2#*.}" ]]
+  }
+  version_lt() {
+    [[ "${1%.*}" -lt "${2%.*}" ]] || [[ "${1%.*}" -eq "${2%.*}" && "${1#*.}" -lt "${2#*.}" ]]
+  }
+  
+  if ! command -v curl >/dev/null; then
+      abort "$(cat <<EOABORT
+  You must install cURL before using cloudenv
+  EOABORT
+  )"
+  fi
+  
+  if ! command -v openssl >/dev/null; then
+      abort "$(cat <<EOABORT
+  You must install openssl before using cloudenv
+  EOABORT
+  )"
+  fi
 }
 
 # :command.run

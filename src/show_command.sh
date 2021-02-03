@@ -1,29 +1,5 @@
-if [ ! -f ~/.cloudenvrc ]
-then
-	echo
-	echo "Not logged in"
-	echo
-	echo "Please run: cloudenv login"
-	echo
-	exit
-fi
-
-if [ ! -f .cloudenv-secret-key ]
-then
-	echo
-	echo "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
-	echo
-	echo "Please run: cloudenv init"
-	echo
-	echo "Or cd into the root directory of your app to make env edits"
-	echo
-	exit
-fi
-
-bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
-app=`head -1 .cloudenv-secret-key`
-secretkey=`head -2 .cloudenv-secret-key | tail -1`
-environment="${args[environment]}"
+check_logged_in
+check_for_project
 
 if [ "$environment" != "default" ]
 then
@@ -32,6 +8,8 @@ then
 	if [ -s "$tempdir/cloudenv-show-default-encrypted" ]
 	then
 		openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-default-encrypted" 2> /dev/null
+	else
+		echo "# ${tty_red}Warning${tty_reset}: Couldn't get the $environment environment from $app"
 	fi
 fi
 
@@ -40,6 +18,8 @@ curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&envi
 if [ -s "$tempdir/cloudenv-show-$environment-encrypted" ]
 then
 	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-show-$environment-encrypted" 2> /dev/null
+else
+	echo "# ${tty_red}Warning${tty_reset}: Couldn't get the $environment environment from $app"
 fi
 
 rm -rf "$tempdir"

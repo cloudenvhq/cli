@@ -75,9 +75,9 @@ curl -s -F "data=@$tempdir/cloudenv.auth" "$BASE_URL/initauth" > "$tempdir/cloud
 rm "$tempdir/cloudenv.auth"
 
 echo
-echo "Please visit this url and login or register to authorize this computer: "
+ohai "Please visit this url and login or register to authorize this computer: "
 echo
-cat "$tempdir/cloudenv.auth-url"
+ohai "${tty_underline}`cat "$tempdir/cloudenv.auth-url"`${tty_reset}"
 echo
 echo
 
@@ -93,13 +93,13 @@ done
 
 if [[ $data == ?(-)+([0-9]) ]]
 then
-  echo "Login failed, please try again"
+  warn "Login failed, please try again"
   echo
 else
   read -ra ADDR <<< "$data"
   email="${ADDR[0]}"
   token="${ADDR[1]}"
   echo $token > ~/.cloudenvrc
-  echo "You are now logged in as $email"
+  ohai "You are now logged in as $email"
   echo
 fi

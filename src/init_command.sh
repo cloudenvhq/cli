@@ -1,21 +1,11 @@
-if [ ! -f ~/.cloudenvrc ]
-then
-	echo
-	echo "Not logged in"
-	echo
-	echo "Please run: cloudenv login"
-	echo
-	exit
-fi
-
-bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
+check_logged_in
 
 if [ -f .cloudenv-secret-key ]
 then
 	name=`head -1 .cloudenv-secret-key`
 	secretkey=`head -2 .cloudenv-secret-key | tail -1`
 	environment="default"
-	echo "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
+	warn "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
 	echo
 	read -p "Generate a new secret key for this project? (N/y): " newkey
 	if [ "$newkey" == "y" ]
@@ -35,22 +25,33 @@ then
 			openssl enc -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-decrypted" -out "$tempdir/cloudenv-edit"
 			curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit" "$BASE_URL/api/v1/envs?app=$name&environment=$environment&version=$version&lang=cli"
 		else
-			echo "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
+			warn "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
 			exit
 		fi
 		rm "$tempdir/cloudenv-edit*"
 		if [ "$app" != 200 ]
 		then
 			echo
-			echo "ERROR ($app): I'm sorry but you do not have access to this app. If you believe this is in error, please contact another team member."
+			warn "ERROR ($app): I'm sorry but you do not have access to this app. If you believe this is in error, please contact another team member."
 		else
 			echo
-			echo "SUCCESS: New encryption key generated"
+			ohai "SUCCESS: New encryption key generated"
 			echo
-			echo "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
+			ohai "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
 		fi
 	fi
 else
+	account_number=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l)
+
+	if [ "$account_number" -gt "1" ]
+	then
+		ohai "Which account would you like to use from the following?"
+		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
+		read -p "Account number (1-$account_number): " account_number
+		echo
+		ohai "Got it, now let's name your app."
+	fi
+
 	read -p "Name of App: " name
 	# first, replace spaces with dashes
 	slug=${name// /-}
@@ -59,19 +60,19 @@ else
 	# finally, lowercase with TR
 	slug=`echo -n $slug | tr A-Z a-z`
 
-	app=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+	app=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account_number=$account_number" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
 	if [ "$app" == 401 ]
 	then
 		echo
-		echo "ERROR (401): This app name already exists, please choose a different one and try again."
+		warn "ERROR (401): This app name already exists, please choose a different one and try again."
 		exit
 	fi
 	if [ "$app" == 200 ]
 	then
 		echo
-		echo "ERROR (200): This app name already exists."
+		warn "ERROR (200): This app name already exists."
 		echo
-		echo "To get access to the variables, you must get a copy of .cloudenv-secret-key from a team member into this directory"
+		ohai "To get access to the variables, you must get a copy of .cloudenv-secret-key from a team member into this directory"
 		echo
 		exit
 	fi
@@ -80,28 +81,28 @@ else
 	echo >> .cloudenv-secret-key
 	sha=`openssl dgst -sha256 .cloudenv-secret-key`
   read -ra ADDR <<< "$sha"
-	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$name&slug=$slug&sha=${ADDR[1]}&version=$version&lang=cli" > "$tempdir/cloudenv-app"
+	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?account_number=$account_number&name=$name&slug=$slug&sha=${ADDR[1]}&version=$version&lang=cli" > "$tempdir/cloudenv-app"
 	if [ "$app" == 201 ]
 	then
 		echo
-		echo "SUCCESS: You have created the app '$name' in CloudEnv"
+		ohai "SUCCESS: You have created the app '$name' in CloudEnv"
 		echo
-		echo "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
+		ohai "You need to distribute $PWD/.cloudenv-secret-key to all your team members and servers"
 	else
 		if [ "$app" == 401 ]
 		then
 			echo
-			echo "ERROR ($app): Authentication error. Please run: cloudenv login"
+			warn "ERROR ($app): Authentication error. Please run: cloudenv login"
 			exit
 		else
 			if [ "$app" == 404 ]
 			then
 				echo
-				echo "ERROR ($app): The CLI does not yet support accounts that are part of multiple organizations, please create this app at app.cloudenv.com"
+				warn "ERROR ($app): The CLI does not yet support accounts that are part of multiple organizations, please create this app at app.cloudenv.com"
 				exit
 			else
 				echo
-				echo "ERROR ($app): There was a problem creating app '$name' with slug '$slug'. Please try to create the app at app.cloudenv.com"
+				warn "ERROR ($app): There was a problem creating app '$name' with slug '$slug'. Please try to create the app at app.cloudenv.com"
 				exit
 			fi
 		fi
