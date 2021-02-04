@@ -575,7 +575,7 @@ cloudenv_init_command() {
   	# finally, lowercase with TR
   	slug=`echo -n $slug | tr A-Z a-z`
   
-  	status=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account_number=$account_number" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+  	status=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
   	if [ "$status" == 401 ]
   	then
   		echo
