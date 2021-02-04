@@ -19,8 +19,7 @@ then
 			base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key-new
 			echo >> .cloudenv-secret-key-new
 			mv .cloudenv-secret-key-new .cloudenv-secret-key
-			sha=`openssl dgst -sha256 .cloudenv-secret-key`
-		  read -ra ADDR <<< "$sha"
+			sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
 			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"
 			secretkey=`head -2 .cloudenv-secret-key | tail -1`
 			upload_env "$tempdir/cloudenv-edit-decrypted"
@@ -86,8 +85,7 @@ else
 	echo $slug > .cloudenv-secret-key
 	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key
 	echo >> .cloudenv-secret-key
-	sha=`openssl dgst -sha256 .cloudenv-secret-key`
-  read -ra ADDR <<< "$sha"
+	sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
 	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
 	if [ "$status" == 201 ]
 	then

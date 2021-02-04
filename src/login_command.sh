@@ -106,9 +106,8 @@ then
   warn "Login failed, please try again"
   echo
 else
-  read -ra ADDR <<< "$data"
-  email="${ADDR[0]}"
-  token="${ADDR[1]}"
+  email="$(echo $data | awk '{print $1}')"
+  token="$(echo $data | awk '{print $2}')"
   echo $token > ~/.cloudenvrc
   ohai "You are now logged in as ${tty_underline}$email${tty_reset}"
   echo
