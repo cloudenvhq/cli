@@ -1,6 +1,6 @@
-check_logged_in
+environment="${args[environment]:-default}"
 
-environment="${args[environment]}"
+check_logged_in
 
 if [ -f .cloudenv-secret-key ]
 then
@@ -8,9 +8,10 @@ then
 	warn "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
 	echo
 	read -p "Generate a new secret key for this project? (N/y): " newkey
-	echo	
+	echo
 	if [ "$newkey" == "y" ]
 	then
+		check_can_write_env
 		get_env "default" > "$tempdir/cloudenv-edit-decrypted"
 		if [ -s "$tempdir/cloudenv-edit-decrypted" ]
 		then
@@ -20,7 +21,7 @@ then
 			mv .cloudenv-secret-key-new .cloudenv-secret-key
 			sha=`openssl dgst -sha256 .cloudenv-secret-key`
 		  read -ra ADDR <<< "$sha"
-			status=`curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"
 			secretkey=`head -2 .cloudenv-secret-key | tail -1`
 			upload_env "$tempdir/cloudenv-edit-decrypted"
 		else
@@ -29,18 +30,13 @@ then
 			rm -rf "$tempdir/cloudenv-edit*"
 			exit
 		fi
+		ohai "SUCCESS: New encryption key generated"
+		echo
+		ohai "You need to re-distribute the following file to all your team members and deployment servers"
+		echo
+		echo "$PWD/.cloudenv-secret-key"
+		echo
 		rm -rf "$tempdir/cloudenv-edit*"
-		if [ "$status" != 200 ]
-		then
-			warn "ERROR ($status): I'm sorry but you do not have access to this app. If you believe this is in error, please contact another team member."
-		else
-			ohai "SUCCESS: New encryption key generated"
-			echo
-			ohai "You need to re-distribute the following file to all your team members and deployment servers"
-			echo
-			echo "$PWD/.cloudenv-secret-key"
-			echo
-		fi
 	fi
 else
 	account_number=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)

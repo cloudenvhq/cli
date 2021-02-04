@@ -1,7 +1,8 @@
+environment="${args[environment]}"
+
 check_logged_in
 check_for_project
-
-environment="${args[environment]}"
+check_can_read_env
 
 if [ "$environment" != "default" ]
 then

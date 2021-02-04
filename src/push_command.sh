@@ -1,8 +1,9 @@
-check_logged_in
-check_for_project
-
 file="${args[file]}"
 environment="${args[environment]}"
+
+check_logged_in
+check_for_project
+check_can_write_env
 
 echo
 

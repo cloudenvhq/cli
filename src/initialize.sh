@@ -70,7 +70,7 @@ check_logged_in() {
     echo
     ohai "Please run: cloudenv login"
     echo
-    exit
+    exit 1
   fi
 }
 
@@ -84,18 +84,38 @@ check_for_project() {
     echo
     ohai "Or cd into the root directory of your app to make env edits"
     echo
-    exit
+    exit 1
   fi
 }
 
 check_can_read_env() {
-  env=${1:-default}
-  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$env&version=$version&lang=cli"
+  check=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
+  if [ "$check" -eq 0 ]
+  then
+    echo
+    warn "Your API key does not have read access to $app ($environment environment)"
+    echo
+    ohai "Please run: cloudenv login"
+    echo
+    ohai "Or ask your admin for write permissions"
+    echo
+    exit 1
+  fi
 }
 
 check_can_write_env() {
-  env=${1:-default}
-  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$env&version=$version&lang=cli"
+  check=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
+  if [ "$check" -eq 0 ]
+  then
+    echo
+    warn "Your API key does not have write access to $app ($environment environment)"
+    echo
+    ohai "Please run: cloudenv login"
+    echo
+    ohai "Or ask your admin for write permissions"
+    echo
+    exit 1
+  fi
 }
 
 expand_tilde()

@@ -507,9 +507,9 @@ cloudenv_login_command() {
 # :command.function
 cloudenv_init_command() {
   # :src/init_command.sh
-  check_logged_in
+  environment="${args[environment]:-default}"
   
-  environment="${args[environment]}"
+  check_logged_in
   
   if [ -f .cloudenv-secret-key ]
   then
@@ -517,9 +517,10 @@ cloudenv_init_command() {
   	warn "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
   	echo
   	read -p "Generate a new secret key for this project? (N/y): " newkey
-  	echo	
+  	echo
   	if [ "$newkey" == "y" ]
   	then
+  		check_can_write_env
   		get_env "default" > "$tempdir/cloudenv-edit-decrypted"
   		if [ -s "$tempdir/cloudenv-edit-decrypted" ]
   		then
@@ -529,7 +530,7 @@ cloudenv_init_command() {
   			mv .cloudenv-secret-key-new .cloudenv-secret-key
   			sha=`openssl dgst -sha256 .cloudenv-secret-key`
   		  read -ra ADDR <<< "$sha"
-  			status=`curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+  			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"
   			secretkey=`head -2 .cloudenv-secret-key | tail -1`
   			upload_env "$tempdir/cloudenv-edit-decrypted"
   		else
@@ -538,18 +539,13 @@ cloudenv_init_command() {
   			rm -rf "$tempdir/cloudenv-edit*"
   			exit
   		fi
+  		ohai "SUCCESS: New encryption key generated"
+  		echo
+  		ohai "You need to re-distribute the following file to all your team members and deployment servers"
+  		echo
+  		echo "$PWD/.cloudenv-secret-key"
+  		echo
   		rm -rf "$tempdir/cloudenv-edit*"
-  		if [ "$status" != 200 ]
-  		then
-  			warn "ERROR ($status): I'm sorry but you do not have access to this app. If you believe this is in error, please contact another team member."
-  		else
-  			ohai "SUCCESS: New encryption key generated"
-  			echo
-  			ohai "You need to re-distribute the following file to all your team members and deployment servers"
-  			echo
-  			echo "$PWD/.cloudenv-secret-key"
-  			echo
-  		fi
   	fi
   else
   	account_number=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
@@ -640,10 +636,11 @@ cloudenv_merge_command() {
 # :command.function
 cloudenv_edit_command() {
   # :src/edit_command.sh
+  environment="${args[environment]}"
+  
   check_logged_in
   check_for_project
-  
-  environment="${args[environment]}"
+  check_can_write_env
   
   get_env "$environment" > "$tempdir/cloudenv-edit-$environment"
   
@@ -654,7 +651,7 @@ cloudenv_edit_command() {
   
   if cmp --silent "$tempdir/cloudenv-edit-$environment" "$tempdir/cloudenv-orig-$environment"
   then
-  	warn "No changes detected"
+  	warn "No changes detected, nothing uploaded"
   else
   	upload_env "$tempdir/cloudenv-edit-$environment"
   	ohai "Your changes to $app ($environment environment) have been uploaded"
@@ -668,10 +665,11 @@ cloudenv_edit_command() {
 # :command.function
 cloudenv_show_command() {
   # :src/show_command.sh
+  environment="${args[environment]}"
+  
   check_logged_in
   check_for_project
-  
-  environment="${args[environment]}"
+  check_can_read_env
   
   if [ "$environment" != "default" ]
   then
@@ -686,11 +684,12 @@ cloudenv_show_command() {
 # :command.function
 cloudenv_push_command() {
   # :src/push_command.sh
-  check_logged_in
-  check_for_project
-  
   file="${args[file]}"
   environment="${args[environment]}"
+  
+  check_logged_in
+  check_for_project
+  check_can_write_env
   
   echo
   
@@ -712,11 +711,12 @@ cloudenv_push_command() {
 # :command.function
 cloudenv_run_command() {
   # :src/run_command.sh
-  check_logged_in
-  check_for_project
-  
   command="${args[command]}"
   environment="${args[environment]}"
+  
+  check_logged_in
+  check_for_project
+  check_can_read_env
   
   get_env "$environment" > "$tempdir/cloudenv-edit-$environment"
   
@@ -1330,7 +1330,7 @@ initialize() {
       echo
       ohai "Please run: cloudenv login"
       echo
-      exit
+      exit 1
     fi
   }
   
@@ -1344,18 +1344,38 @@ initialize() {
       echo
       ohai "Or cd into the root directory of your app to make env edits"
       echo
-      exit
+      exit 1
     fi
   }
   
   check_can_read_env() {
-    env=${1:-default}
-    curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$env&version=$version&lang=cli"
+    check=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
+    if [ "$check" -eq 0 ]
+    then
+      echo
+      warn "Your API key does not have read access to $app ($environment environment)"
+      echo
+      ohai "Please run: cloudenv login"
+      echo
+      ohai "Or ask your admin for write permissions"
+      echo
+      exit 1
+    fi
   }
   
   check_can_write_env() {
-    env=${1:-default}
-    curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$env&version=$version&lang=cli"
+    check=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
+    if [ "$check" -eq 0 ]
+    then
+      echo
+      warn "Your API key does not have write access to $app ($environment environment)"
+      echo
+      ohai "Please run: cloudenv login"
+      echo
+      ohai "Or ask your admin for write permissions"
+      echo
+      exit 1
+    fi
   }
   
   expand_tilde()
