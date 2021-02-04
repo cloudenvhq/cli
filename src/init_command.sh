@@ -7,7 +7,8 @@ then
 	echo
 	warn "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
 	echo
-	read -p "Generate a new secret key for this project? (N/y): " newkey
+	printf '%s ' 'Generate a new secret key for this project? (N/y): '
+	read newkey
 	echo
 	if [ "$newkey" == "y" ]
 	then
@@ -47,7 +48,8 @@ else
 		echo
 		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
 		echo
-		read -p "Account number (1-$account_number): " account_number
+		printf '%s ' 'Account number (1-$account_number): '
+		read account_number
 		echo
 		ohai "Got it, now let's name your app."
 		echo
@@ -57,7 +59,8 @@ else
 		echo
 	fi
 
-	read -p "Name of App: " name
+	printf '%s ' 'Name of App: '
+	read name
 	# first, replace spaces with dashes
 	slug=${name// /-}
 	# now, clean out anything that's not alphanumeric or a dash
