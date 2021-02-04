@@ -55,6 +55,15 @@ cloudenv.load_cloudenv()
 os.getenv("AWS_SECRET_ACCESS_KEY")
 ```
 
+## Using CloudEnv to Manage Your Console Secrets
+
+You can use CloudEnv to store and manage your local environmental variables, not just your application variables. All you have to do is run `cloudenv init` inside your home directory and add `cloudenv show` to the source step in your shell profile.
+
+```console
+$ cd ~
+$ cloudenv init
+```
+
 ## Bash CloudEnv
 
 ```console
