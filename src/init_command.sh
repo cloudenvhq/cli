@@ -92,6 +92,8 @@ else
 	if [ "$status" == 201 ]
 	then
 		echo
+		echo > "$tempdir/cloudenv-edit-decrypted"
+		upload_env "$tempdir/cloudenv-edit-decrypted"
 		ohai "SUCCESS: You have created the app '$name' in CloudEnv"
 		echo
 		ohai "You need to distribute the following file to all your team members and deployment servers"
@@ -113,3 +115,5 @@ else
 		fi
 	fi
 fi
+
+rm -rf "$tempdir"
