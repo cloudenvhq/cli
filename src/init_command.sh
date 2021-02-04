@@ -71,14 +71,14 @@ else
 	slug=`echo -n $slug | tr A-Z a-z`
 
 	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
-	if [ "$status_code" == 401 ]
+	if [ "$status_code" -eq 401 ]
 	then
 		echo
 		warn "ERROR (401): This app name already exists, please choose a different one and try again."
 		rm .cloudenv-secret-key
 		exit
 	fi
-	if [ "$status_code" == 200 ]
+	if [ "$status_code" -eq 200 ]
 	then
 		echo
 		warn "ERROR (200): This app name already exists."
@@ -92,11 +92,9 @@ else
 	echo >> .cloudenv-secret-key
 	sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
 	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
-	if [ "$status_code" == 201 ]
+	if [ "$status_code" -eq 201 ]
 	then
 		echo
-		echo > "$tempdir/cloudenv-edit-decrypted"
-		upload_env "$tempdir/cloudenv-edit-decrypted"
 		ohai "SUCCESS: You have created the app '$name' in CloudEnv"
 		echo
 		ohai "You need to distribute the following file to all your team members and deployment servers"
@@ -104,7 +102,7 @@ else
 		echo "$PWD/.cloudenv-secret-key"
 		echo
 	else
-		if [ "$status_code" == 401 ]
+		if [ "$status_code" -eq 401 ]
 		then
 			echo
 			warn "ERROR ($status_code): Authentication error. Please run: cloudenv login"
