@@ -3,7 +3,7 @@ ip_address=`curl -s ident.me`
 echo
 ohai "Your current ip address is $ip_address"
 echo
-printf '%s ' 'Do you want to firewall this API token to this IP address (enhanced security on servers)? (N/y): '
+printf '%s ' 'Do you want to firewall this API token to this IP address (enhanced security on servers)? (N/y):'
 read newkey
 echo
 if [ "$newkey" == "y" ]
@@ -15,7 +15,7 @@ readonly=0
 echo
 ohai "CloudEnv can prevent writes from this computer"
 echo
-printf '%s ' 'Do you want this API token to be read-only? (N/y): '
+printf '%s ' 'Do you want this API token to be read-only? (N/y):'
 read newkey
 echo
 if [ "$newkey" == "y" ]
