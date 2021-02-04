@@ -55,3 +55,20 @@ cloudenv.load_cloudenv()
 os.getenv("AWS_SECRET_ACCESS_KEY")
 ```
 
+## Bash CloudEnv
+
+```console
+echo 'env_file=`mktemp`' >> ~/.bash_profile
+echo 'cloudenv show > $env_file' >> ~/bash_profile
+echo 'source $env_file' >> ~/bash_profile
+echo 'rm $env_file' >> ~/bash_profile
+```
+
+## Zsh CloudEnv
+
+```console
+echo 'env_file=`mktemp`' >> ~/.zshrc
+echo 'cloudenv show > $env_file' >> ~/.zshrc
+echo 'source $env_file' >> ~/.zshrc
+echo 'rm $env_file' >> ~/.zshrc
+```
