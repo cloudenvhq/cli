@@ -1,13 +1,21 @@
 locked=0
 ip_address=`curl -s ident.me`
-read -p "Do you want to lock these login credentials to your current ip address $ip_address (this provides extra security on server deployments)? (N/y): " newkey
+echo
+ohai "Your current ip address is $ip_address"
+echo
+read -p "Do you want to firewall this API token to this IP address (enhanced security on servers)? (N/y): " newkey
+echo
 if [ "$newkey" == "y" ]
 then
   locked=1
 fi
 
 readonly=0
-read -p "Do you want these login credentials to be read-only? (N/y): " newkey
+echo
+ohai "CloudEnv can prevent writes from this computer"
+echo
+read -p "Do you want this API token to be read-only? (N/y): " newkey
+echo
 if [ "$newkey" == "y" ]
 then
   readonly=1
@@ -77,7 +85,7 @@ rm "$tempdir/cloudenv.auth"
 echo
 ohai "Please visit this url and login or register to authorize this computer: "
 echo
-ohai "${tty_underline}`cat "$tempdir/cloudenv.auth-url"`${tty_reset}"
+echo "${tty_underline}$(cat "$tempdir/cloudenv.auth-url")${tty_reset}"
 echo
 echo
 
@@ -100,6 +108,6 @@ else
   email="${ADDR[0]}"
   token="${ADDR[1]}"
   echo $token > ~/.cloudenvrc
-  ohai "You are now logged in as $email"
+  ohai "You are now logged in as ${tty_underline}$email${tty_reset}"
   echo
 fi

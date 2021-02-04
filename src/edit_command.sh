@@ -1,50 +1,23 @@
-if [ ! -f ~/.cloudenvrc ]
-then
-	echo
-	warn "Not logged in"
-	echo
-	ohai "Please run: cloudenv login"
-	echo
-	exit
-fi
+check_logged_in
+check_for_project
 
-if [ ! -f .cloudenv-secret-key ]
-then
-	echo
-	warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
-	echo
-	ohai "Please run: cloudenv init"
-	echo
-	ohai "Or cd into the root directory of your app to make env edits"
-	echo
-	exit
-fi
-
-editor="${EDITOR:-nano}"
-bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
-app=`head -1 .cloudenv-secret-key`
-secretkey=`head -2 .cloudenv-secret-key | tail -1`
 environment="${args[environment]}"
 
-curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > "$tempdir/cloudenv-edit-$environment-encrypted"
-
-if [ -s "$tempdir/cloudenv-edit-$environment-encrypted" ]
-then
-	openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment-encrypted" -out "$tempdir/cloudenv-edit-$environment" 2> /dev/null
-else
-	touch "$tempdir/cloudenv-edit-$environment"
-fi
+get_env "$environment" > "$tempdir/cloudenv-edit-$environment"
 
 cp "$tempdir/cloudenv-edit-$environment" "$tempdir/cloudenv-orig-$environment"
 "$editor" "$tempdir/cloudenv-edit-$environment"
 
+echo
+
 if cmp --silent "$tempdir/cloudenv-edit-$environment" "$tempdir/cloudenv-orig-$environment"
 then
-	echo "No changes detected"
+	warn "No changes detected"
 else
-	openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$tempdir/cloudenv-edit-$environment" -out "$tempdir/cloudenv-edit-$environment-encrypted" 2> /dev/null
-
-	curl -s -H "Authorization: Bearer $bearer" -F "data=@$tempdir/cloudenv-edit-$environment-encrypted" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > /dev/null
+	upload_env "$tempdir/cloudenv-edit-$environment"
+	ohai "Your changes to $app ($environment environment) have been uploaded"
 fi
+
+echo
 
 rm -rf "$tempdir"

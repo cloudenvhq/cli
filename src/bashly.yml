@@ -1,6 +1,6 @@
 name: cloudenv
 help: CloudEnv
-version: 0.1.4
+version: 0.1.5
 
 environment_variables:
 - name: api_key

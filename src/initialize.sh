@@ -9,10 +9,17 @@ BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
 
 tempdir=$(mktemp -d)
 editor="${EDITOR:-nano}"
-bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
-app=`head -1 .cloudenv-secret-key`
-secretkey=`head -2 .cloudenv-secret-key | tail -1`
-environment="${args[environment]}"
+
+if [ -f ~/.cloudenvrc ]
+then
+  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
+fi
+
+if [ -f .cloudenv-secret-key ]
+then
+  app=`head -1 .cloudenv-secret-key`
+  secretkey=`head -2 .cloudenv-secret-key | tail -1`
+fi
 
 # string formatters
 if [[ -t 1 ]]; then
@@ -81,6 +88,64 @@ check_for_project() {
   fi
 }
 
+check_can_read_env() {
+  env=${1:-default}
+  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$app&environment=$env&version=$version&lang=cli"
+}
+
+check_can_write_env() {
+  env=${1:-default}
+  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$env&version=$version&lang=cli"
+}
+
+expand_tilde()
+{
+    local tilde_re='^(~[A-Za-z0-9_.-]*)(.*)'
+    local path="$*"
+    local pathSuffix=
+
+    if [[ $path =~ $tilde_re ]]
+    then
+        # only use eval on the ~username portion !
+        path=$(eval echo ${BASH_REMATCH[1]})
+        pathSuffix=${BASH_REMATCH[2]}
+    fi
+
+    echo "${path}${pathSuffix}"
+}
+
+get_encrypted_env() {
+  env=${1:-default}
+  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$env&version=$version&lang=cli"
+}
+
+get_env() {
+  env=${1:-default}
+  encrypted_file=$(mktemp)
+  output_file=$(mktemp)
+  get_encrypted_env $env > "$encrypted_file"
+
+  if [ -s "$encrypted_file" ]
+  then
+    bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
+  fi
+
+  rm -rf "$encrypted_file"
+  cat "$output_file"
+  rm -rf "$output_file"
+}
+
+encrypt_env() {
+  openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$1" -out "$2" 2> /dev/null
+}
+
+upload_env() {
+  encrypted_file=$(mktemp)
+  encrypt_env "$1" "$encrypted_file" "$secretkey"
+  curl -s -H "Authorization: Bearer $bearer" -F "data=@$encrypted_file" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > /dev/null
+  rm -rf "$encrypted_file"
+}
+
 getc() {
   local save_state
   save_state=$(/bin/stty -g)
@@ -99,16 +164,12 @@ version_lt() {
   [[ "${1%.*}" -lt "${2%.*}" ]] || [[ "${1%.*}" -eq "${2%.*}" && "${1#*.}" -lt "${2#*.}" ]]
 }
 
-if ! command -v curl >/dev/null; then
-    abort "$(cat <<EOABORT
-You must install cURL before using cloudenv
-EOABORT
-)"
+if ! command -v curl >/dev/null
+then
+  abort "You must install curl before using cloudenv"
 fi
 
-if ! command -v openssl >/dev/null; then
-    abort "$(cat <<EOABORT
-You must install openssl before using cloudenv
-EOABORT
-)"
+if ! command -v openssl >/dev/null
+then
+  abort "You must install openssl before using cloudenv"
 fi
