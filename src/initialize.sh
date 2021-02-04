@@ -97,7 +97,7 @@ check_can_read_env() {
     echo
     ohai "Please run: cloudenv login"
     echo
-    ohai "Or ask your admin for write permissions"
+    ohai "Or ask your admin for read permissions"
     echo
     exit 1
   fi
