@@ -75,10 +75,10 @@ f+HTaKk3qb7SGHubpRbup9qpfZIRp020wIFn3rwWmw2e5ra40JiICU2NoA==
 
 yes | gpg --import "$tempdir/cloudenv.pub" &> /dev/null
 rm "$tempdir/cloudenv.pub"
-hostname > ~/.cloudenvrc
-base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> ~/.cloudenvrc
-echo >> ~/.cloudenvrc
-gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc > "$tempdir/cloudenv.auth"
+hostname > ~/.cloudenvrc-setup
+base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> ~/.cloudenvrc-setup
+echo >> ~/.cloudenvrc-setup
+gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc-setup > "$tempdir/cloudenv.auth"
 curl -s -F "data=@$tempdir/cloudenv.auth" "$BASE_URL/initauth" > "$tempdir/cloudenv.auth-url"
 rm "$tempdir/cloudenv.auth"
 
@@ -89,17 +89,19 @@ echo "${tty_underline}$(cat "$tempdir/cloudenv.auth-url")${tty_reset}"
 echo
 echo
 
-data=0
+data=1
 i=0
 
-while [[ $data == ?(-)+([0-9]) ]] && [ $i -lt 100 ]
+re='^[0-9]+$'
+
+while [[ $data =~ $re ]]
 do
   i=$((i+1))
-  data=`curl -s -F "data=@$HOME/.cloudenvrc" "$BASE_URL/checkauth?locked=$locked&readonly=$readonly&ip_address=$ip_address"`
+  data=`curl -s -F "data=@$HOME/.cloudenvrc-setup" "$BASE_URL/checkauth?locked=$locked&readonly=$readonly&ip_address=$ip_address"`
   sleep 2
 done
 
-if [[ $data == ?(-)+([0-9]) ]]
+if [[ $data =~ $re ]]
 then
   warn "Login failed, please try again"
   echo
@@ -111,3 +113,5 @@ else
   ohai "You are now logged in as ${tty_underline}$email${tty_reset}"
   echo
 fi
+
+rm -rf ~/.cloudenvrc-setup
