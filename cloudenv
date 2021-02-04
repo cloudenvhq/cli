@@ -597,7 +597,7 @@ cloudenv_init_command() {
   	echo >> .cloudenv-secret-key
   	sha=`openssl dgst -sha256 .cloudenv-secret-key`
     read -ra ADDR <<< "$sha"
-  	curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?account_number=$account_number&name=$name&slug=$slug&sha=${ADDR[1]}&version=$version&lang=cli" > "$tempdir/cloudenv-app"
+  	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
   	if [ "$status" == 201 ]
   	then
   		echo
