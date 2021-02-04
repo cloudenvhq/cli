@@ -70,15 +70,15 @@ else
 	# finally, lowercase with TR
 	slug=`echo -n $slug | tr A-Z a-z`
 
-	status=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
-	if [ "$status" == 401 ]
+	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
+	if [ "$status_code" == 401 ]
 	then
 		echo
 		warn "ERROR (401): This app name already exists, please choose a different one and try again."
 		rm .cloudenv-secret-key
 		exit
 	fi
-	if [ "$status" == 200 ]
+	if [ "$status_code" == 200 ]
 	then
 		echo
 		warn "ERROR (200): This app name already exists."
@@ -92,7 +92,7 @@ else
 	echo >> .cloudenv-secret-key
 	sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
 	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
-	if [ "$status" == 201 ]
+	if [ "$status_code" == 201 ]
 	then
 		echo
 		echo > "$tempdir/cloudenv-edit-decrypted"
@@ -104,15 +104,15 @@ else
 		echo "$PWD/.cloudenv-secret-key"
 		echo
 	else
-		if [ "$status" == 401 ]
+		if [ "$status_code" == 401 ]
 		then
 			echo
-			warn "ERROR ($status): Authentication error. Please run: cloudenv login"
+			warn "ERROR ($status_code): Authentication error. Please run: cloudenv login"
 			rm .cloudenv-secret-key
 			exit
 		else
 			echo
-			warn "ERROR ($status): There was a problem creating app '$name' with slug '$slug'. Please try to create the app at app.cloudenv.com"
+			warn "ERROR ($status_code): There was a problem creating app '$name' with slug '$slug'. Please try to create the app at app.cloudenv.com"
 			rm .cloudenv-secret-key
 			exit
 		fi
