@@ -609,9 +609,11 @@ cloudenv_init_command() {
   	if [ "$status_code" -eq 201 ]
   	then
   		echo
-  		ohai "SUCCESS: You have created the app '$name' in CloudEnv"
+  		ohai "SUCCESS: You have created the app '$name' in CloudEnv. Try the following command next:"
   		echo
-  		ohai "You need to distribute the following file to all your team members and deployment servers"
+  		echo "EDITOR=nano cloudenv edit"
+  		echo
+  		ohai "REMEMBER: You need to distribute the following file to all your team members and deployment servers"
   		echo
   		echo "$PWD/.cloudenv-secret-key"
   		echo
