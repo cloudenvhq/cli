@@ -90,12 +90,12 @@ check_for_project() {
 
 check_can_read_env() {
   env=${1:-default}
-  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps?name=$app&environment=$env&version=$version&lang=cli"
+  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$env&version=$version&lang=cli"
 }
 
 check_can_write_env() {
   env=${1:-default}
-  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$env&version=$version&lang=cli"
+  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$env&version=$version&lang=cli"
 }
 
 expand_tilde()
