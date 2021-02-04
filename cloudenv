@@ -394,7 +394,8 @@ cloudenv_login_command() {
   echo
   ohai "Your current ip address is $ip_address"
   echo
-  read -p "Do you want to firewall this API token to this IP address (enhanced security on servers)? (N/y): " newkey
+  printf '%s ' 'Do you want to firewall this API token to this IP address (enhanced security on servers)? (N/y): '
+  read newkey
   echo
   if [ "$newkey" == "y" ]
   then
@@ -405,7 +406,8 @@ cloudenv_login_command() {
   echo
   ohai "CloudEnv can prevent writes from this computer"
   echo
-  read -p "Do you want this API token to be read-only? (N/y): " newkey
+  printf '%s ' 'Do you want this API token to be read-only? (N/y): '
+  read newkey
   echo
   if [ "$newkey" == "y" ]
   then
@@ -519,7 +521,8 @@ cloudenv_init_command() {
   	echo
   	warn "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
   	echo
-  	read -p "Generate a new secret key for this project? (N/y): " newkey
+  	printf '%s ' 'Generate a new secret key for this project? (N/y): '
+  	read newkey
   	echo
   	if [ "$newkey" == "y" ]
   	then
@@ -559,7 +562,8 @@ cloudenv_init_command() {
   		echo
   		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
   		echo
-  		read -p "Account number (1-$account_number): " account_number
+  		printf '%s ' 'Account number (1-$account_number): '
+  		read account_number
   		echo
   		ohai "Got it, now let's name your app."
   		echo
@@ -569,7 +573,8 @@ cloudenv_init_command() {
   		echo
   	fi
   
-  	read -p "Name of App: " name
+  	printf '%s ' 'Name of App: '
+  	read name
   	# first, replace spaces with dashes
   	slug=${name// /-}
   	# now, clean out anything that's not alphanumeric or a dash
