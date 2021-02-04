@@ -48,7 +48,7 @@ else
 		echo
 		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
 		echo
-		printf '%s ' 'Account number (1-$account_number): '
+		printf '%s ' "Account number (1-$account_number): "
 		read account_number
 		echo
 		ohai "Got it, now let's name your app."
