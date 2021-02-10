@@ -193,3 +193,8 @@ if ! command -v openssl >/dev/null
 then
   abort "You must install openssl before using cloudenv"
 fi
+
+if ! command -v gpg >/dev/null
+then
+  abort "You must install gpg before using cloudenv"
+fi
