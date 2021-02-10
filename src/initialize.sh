@@ -10,6 +10,38 @@ BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
 tempdir=$(mktemp -d)
 editor="${EDITOR:-nano}"
 
+get_encrypted_env() {
+  env=${1:-default}
+  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$env&version=$version&lang=cli"
+}
+
+get_env() {
+  env=${1:-default}
+  encrypted_file=$(mktemp)
+  output_file=$(mktemp)
+  get_encrypted_env $env > "$encrypted_file"
+
+  if [ -s "$encrypted_file" ]
+  then
+    bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
+  fi
+
+  rm -rf "$encrypted_file"
+  cat "$output_file"
+  rm -rf "$output_file"
+}
+
+encrypt_env() {
+  openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$1" -out "$2" 2> /dev/null
+}
+
+upload_env() {
+  encrypted_file=$(mktemp)
+  encrypt_env "$1" "$encrypted_file" "$secretkey"
+  curl -s -H "Authorization: Bearer $bearer" -F "data=@$encrypted_file" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > /dev/null
+  rm -rf "$encrypted_file"
+}
+
 if [ -f ~/.cloudenvrc ]
 then
   bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
@@ -132,38 +164,6 @@ expand_tilde()
     fi
 
     echo "${path}${pathSuffix}"
-}
-
-get_encrypted_env() {
-  env=${1:-default}
-  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$env&version=$version&lang=cli"
-}
-
-get_env() {
-  env=${1:-default}
-  encrypted_file=$(mktemp)
-  output_file=$(mktemp)
-  get_encrypted_env $env > "$encrypted_file"
-
-  if [ -s "$encrypted_file" ]
-  then
-    bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
-  fi
-
-  rm -rf "$encrypted_file"
-  cat "$output_file"
-  rm -rf "$output_file"
-}
-
-encrypt_env() {
-  openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$1" -out "$2" 2> /dev/null
-}
-
-upload_env() {
-  encrypted_file=$(mktemp)
-  encrypt_env "$1" "$encrypted_file" "$secretkey"
-  curl -s -H "Authorization: Bearer $bearer" -F "data=@$encrypted_file" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > /dev/null
-  rm -rf "$encrypted_file"
 }
 
 getc() {
