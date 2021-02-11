@@ -530,13 +530,14 @@ cloudenv_init_command() {
   		get_env "default" > "$tempdir/cloudenv-edit-decrypted"
   		if [ -s "$tempdir/cloudenv-edit-decrypted" ]
   		then
-  			head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
+  			grep "slug" .cloudenv-secret-key > .cloudenv-secret-key-new
+  			echo "secret-key" | tr '\n' ':' >> .cloudenv-secret-key-new
+  			echo | tr '\n' ' ' >> .cloudenv-secret-key-new
   			base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key-new
   			echo >> .cloudenv-secret-key-new
   			mv .cloudenv-secret-key-new .cloudenv-secret-key
   			sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
-  			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"
-  			secretkey=`head -2 .cloudenv-secret-key | tail -1`
+  			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps"
   			upload_env "$tempdir/cloudenv-edit-decrypted"
   		else
   			warn "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
@@ -553,14 +554,14 @@ cloudenv_init_command() {
   		rm -rf "$tempdir/cloudenv-edit*"
   	fi
   else
-  	account_number=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
+  	account_number=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
   
   	if [ "$account_number" -gt "1" ]
   	then
   		echo
   		ohai "Which account would you like this app to be associated with?"
   		echo
-  		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
+  		curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
   		echo
   		printf '%s' 'Account number (1-'
   		printf '%s' $account_number
@@ -584,15 +585,15 @@ cloudenv_init_command() {
   	# finally, lowercase with TR
   	slug=`echo -n $slug | tr A-Z a-z`
   
-  	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
-  	if [ "$status_code" -eq 401 ]
+  	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps"`
+  	if [ "$status_code" -eq 401 ] 2> /dev/null
   	then
   		echo
   		warn "ERROR (401): This app name already exists, please choose a different one and try again."
   		rm .cloudenv-secret-key
   		exit
   	fi
-  	if [ "$status_code" -eq 200 ]
+  	if [ "$status_code" -eq 200 ] 2> /dev/null
   	then
   		echo
   		warn "ERROR (200): This app name already exists."
@@ -601,12 +602,14 @@ cloudenv_init_command() {
   		echo
   		exit
   	fi
-  	echo $slug > .cloudenv-secret-key
+  	echo "slug: $slug" > .cloudenv-secret-key
+  	echo "secret-key" | tr '\n' ':' >> .cloudenv-secret-key
+  	echo | tr '\n' ' ' >> .cloudenv-secret-key
   	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key
   	echo >> .cloudenv-secret-key
   	sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
-  	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
-  	if [ "$status_code" -eq 201 ]
+  	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
+  	if [ "$status_code" -eq 201 ] 2> /dev/null
   	then
   		echo
   		ohai "SUCCESS: You have created the app '$name' in CloudEnv. Try the following command next:"
@@ -618,7 +621,7 @@ cloudenv_init_command() {
   		echo "$PWD/.cloudenv-secret-key"
   		echo
   	else
-  		if [ "$status_code" -eq 401 ]
+  		if [ "$status_code" -eq 401 ] 2> /dev/null
   		then
   			echo
   			warn "ERROR ($status_code): Authentication error. Please run: cloudenv login"
@@ -666,7 +669,7 @@ cloudenv_edit_command() {
   	warn "No changes detected, nothing uploaded"
   else
   	upload_env "$tempdir/cloudenv-edit-$environment"
-  	ohai "Your changes to $app ($environment environment) have been uploaded"
+  	ohai "Your changes to $(get_current_app) ($environment environment) have been uploaded"
   fi
   
   echo
@@ -708,7 +711,7 @@ cloudenv_push_command() {
   if [ -f "$file" ]
   then
   	upload_env "$file"
-  	ohai "Environment $environment in app $app has been updated"
+  	ohai "Environment $environment in app $(get_current_app) has been updated"
   else
   	warn "File '$file' does not exist"
   	echo
@@ -1265,7 +1268,7 @@ cloudenv_upgrade_parse_requirements() {
 
 # :command.initialize
 initialize() {
-  version="0.1.5"
+  version="0.2.0"
   long_usage=''
   set -e  
 
@@ -1282,16 +1285,58 @@ initialize() {
   tempdir=$(mktemp -d)
   editor="${EDITOR:-nano}"
   
-  if [ -f ~/.cloudenvrc ]
-  then
-    bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
-  fi
+  get_encrypted_env() {
+    env=${1:-default}
+    curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/envs?name=$(get_current_app)&environment=$env&version=$version&lang=cli"
+  }
   
-  if [ -f .cloudenv-secret-key ]
-  then
-    app=`head -1 .cloudenv-secret-key`
-    secretkey=`head -2 .cloudenv-secret-key | tail -1`
-  fi
+  get_env() {
+    env=${1:-default}
+    encrypted_file=$(mktemp)
+    output_file=$(mktemp)
+    get_encrypted_env $env > "$encrypted_file"
+  
+    if [ -s "$encrypted_file" ]
+    then
+      bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$(get_current_secret)" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
+    fi
+  
+    rm -rf "$encrypted_file"
+    cat "$output_file"
+    rm -rf "$output_file"
+  }
+  
+  encrypt_env() {
+    openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$(get_current_secret)" -in "$1" -out "$2" 2> /dev/null
+  }
+  
+  upload_env() {
+    encrypted_file=$(mktemp)
+    encrypt_env "$1" "$encrypted_file" "$(get_current_secret)"
+    curl -s -H "Authorization: Bearer $(get_bearer)" -F "data=@$encrypted_file" "$BASE_URL/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" > /dev/null
+    rm -rf "$encrypted_file"
+  }
+  
+  get_bearer() {
+    if [ -f ~/.cloudenvrc ]
+    then
+      cat ~/.cloudenvrc | tr -d " \t\n\r"
+    fi
+  }
+  
+  get_current_app() {
+    if [ -f .cloudenv-secret-key ]
+    then
+      grep "slug" .cloudenv-secret-key | awk '{print $2}'
+    fi
+  }
+  
+  get_current_secret() {
+    if [ -f .cloudenv-secret-key ]
+    then
+      grep "secret-key" .cloudenv-secret-key | awk '{print $2}'
+    fi
+  }
   
   # string formatters
   if [[ -t 1 ]]; then
@@ -1361,11 +1406,11 @@ initialize() {
   }
   
   check_can_read_env() {
-    check=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
+    check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
     if [ "$check" -eq 0 ]
     then
       echo
-      warn "Your API key does not have read access to $app ($environment environment)"
+      warn "Your API key does not have read access to $(get_current_app) ($environment environment)"
       echo
       ohai "Please run: cloudenv login"
       echo
@@ -1376,11 +1421,11 @@ initialize() {
   }
   
   check_can_write_env() {
-    check=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
+    check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
     if [ "$check" -eq 0 ]
     then
       echo
-      warn "Your API key does not have write access to $app ($environment environment)"
+      warn "Your API key does not have write access to $(get_current_app) ($environment environment)"
       echo
       ohai "Please run: cloudenv login"
       echo
@@ -1404,38 +1449,6 @@ initialize() {
       fi
   
       echo "${path}${pathSuffix}"
-  }
-  
-  get_encrypted_env() {
-    env=${1:-default}
-    curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$env&version=$version&lang=cli"
-  }
-  
-  get_env() {
-    env=${1:-default}
-    encrypted_file=$(mktemp)
-    output_file=$(mktemp)
-    get_encrypted_env $env > "$encrypted_file"
-  
-    if [ -s "$encrypted_file" ]
-    then
-      bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
-    fi
-  
-    rm -rf "$encrypted_file"
-    cat "$output_file"
-    rm -rf "$output_file"
-  }
-  
-  encrypt_env() {
-    openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$1" -out "$2" 2> /dev/null
-  }
-  
-  upload_env() {
-    encrypted_file=$(mktemp)
-    encrypt_env "$1" "$encrypted_file" "$secretkey"
-    curl -s -H "Authorization: Bearer $bearer" -F "data=@$encrypted_file" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > /dev/null
-    rm -rf "$encrypted_file"
   }
   
   getc() {
@@ -1464,6 +1477,11 @@ initialize() {
   if ! command -v openssl >/dev/null
   then
     abort "You must install openssl before using cloudenv"
+  fi
+  
+  if ! command -v gpg >/dev/null
+  then
+    abort "You must install gpg before using cloudenv"
   fi
 }
 

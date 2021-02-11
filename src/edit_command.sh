@@ -16,7 +16,7 @@ then
 	warn "No changes detected, nothing uploaded"
 else
 	upload_env "$tempdir/cloudenv-edit-$environment"
-	ohai "Your changes to $app ($environment environment) have been uploaded"
+	ohai "Your changes to $(get_current_app) ($environment environment) have been uploaded"
 fi
 
 echo

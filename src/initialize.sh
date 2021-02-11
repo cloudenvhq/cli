@@ -12,7 +12,7 @@ editor="${EDITOR:-nano}"
 
 get_encrypted_env() {
   env=${1:-default}
-  curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/envs?name=$app&environment=$env&version=$version&lang=cli"
+  curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/envs?name=$(get_current_app)&environment=$env&version=$version&lang=cli"
 }
 
 get_env() {
@@ -23,7 +23,7 @@ get_env() {
 
   if [ -s "$encrypted_file" ]
   then
-    bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$secretkey" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
+    bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$(get_current_secret)" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
   fi
 
   rm -rf "$encrypted_file"
@@ -32,26 +32,36 @@ get_env() {
 }
 
 encrypt_env() {
-  openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$secretkey" -in "$1" -out "$2" 2> /dev/null
+  openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$(get_current_secret)" -in "$1" -out "$2" 2> /dev/null
 }
 
 upload_env() {
   encrypted_file=$(mktemp)
-  encrypt_env "$1" "$encrypted_file" "$secretkey"
-  curl -s -H "Authorization: Bearer $bearer" -F "data=@$encrypted_file" "$BASE_URL/api/v1/envs?name=$app&environment=$environment&version=$version&lang=cli" > /dev/null
+  encrypt_env "$1" "$encrypted_file" "$(get_current_secret)"
+  curl -s -H "Authorization: Bearer $(get_bearer)" -F "data=@$encrypted_file" "$BASE_URL/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" > /dev/null
   rm -rf "$encrypted_file"
 }
 
-if [ -f ~/.cloudenvrc ]
-then
-  bearer=`cat ~/.cloudenvrc | tr -d " \t\n\r"`
-fi
+get_bearer() {
+  if [ -f ~/.cloudenvrc ]
+  then
+    cat ~/.cloudenvrc | tr -d " \t\n\r"
+  fi
+}
 
-if [ -f .cloudenv-secret-key ]
-then
-  app=`head -1 .cloudenv-secret-key`
-  secretkey=`head -2 .cloudenv-secret-key | tail -1`
-fi
+get_current_app() {
+  if [ -f .cloudenv-secret-key ]
+  then
+    grep "slug" .cloudenv-secret-key | awk '{print $2}'
+  fi
+}
+
+get_current_secret() {
+  if [ -f .cloudenv-secret-key ]
+  then
+    grep "secret-key" .cloudenv-secret-key | awk '{print $2}'
+  fi
+}
 
 # string formatters
 if [[ -t 1 ]]; then
@@ -121,11 +131,11 @@ check_for_project() {
 }
 
 check_can_read_env() {
-  check=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
+  check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
   if [ "$check" -eq 0 ]
   then
     echo
-    warn "Your API key does not have read access to $app ($environment environment)"
+    warn "Your API key does not have read access to $(get_current_app) ($environment environment)"
     echo
     ohai "Please run: cloudenv login"
     echo
@@ -136,11 +146,11 @@ check_can_read_env() {
 }
 
 check_can_write_env() {
-  check=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps/show.txt?name=$app&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
+  check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
   if [ "$check" -eq 0 ]
   then
     echo
-    warn "Your API key does not have write access to $app ($environment environment)"
+    warn "Your API key does not have write access to $(get_current_app) ($environment environment)"
     echo
     ohai "Please run: cloudenv login"
     echo

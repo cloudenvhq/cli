@@ -10,7 +10,7 @@ echo
 if [ -f "$file" ]
 then
 	upload_env "$file"
-	ohai "Environment $environment in app $app has been updated"
+	ohai "Environment $environment in app $(get_current_app) has been updated"
 else
 	warn "File '$file' does not exist"
 	echo

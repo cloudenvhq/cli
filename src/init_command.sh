@@ -16,13 +16,14 @@ then
 		get_env "default" > "$tempdir/cloudenv-edit-decrypted"
 		if [ -s "$tempdir/cloudenv-edit-decrypted" ]
 		then
-			head -1 .cloudenv-secret-key > .cloudenv-secret-key-new
+			grep "slug" .cloudenv-secret-key > .cloudenv-secret-key-new
+			echo "secret-key" | tr '\n' ':' >> .cloudenv-secret-key-new
+			echo | tr '\n' ' ' >> .cloudenv-secret-key-new
 			base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key-new
 			echo >> .cloudenv-secret-key-new
 			mv .cloudenv-secret-key-new .cloudenv-secret-key
 			sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
-			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"
-			secretkey=`head -2 .cloudenv-secret-key | tail -1`
+			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps"
 			upload_env "$tempdir/cloudenv-edit-decrypted"
 		else
 			warn "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
@@ -39,14 +40,14 @@ then
 		rm -rf "$tempdir/cloudenv-edit*"
 	fi
 else
-	account_number=$(curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
+	account_number=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
 
 	if [ "$account_number" -gt "1" ]
 	then
 		echo
 		ohai "Which account would you like this app to be associated with?"
 		echo
-		curl -s -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
+		curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
 		echo
 		printf '%s' 'Account number (1-'
 		printf '%s' $account_number
@@ -70,15 +71,15 @@ else
 	# finally, lowercase with TR
 	slug=`echo -n $slug | tr A-Z a-z`
 
-	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps"`
-	if [ "$status_code" -eq 401 ]
+	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps"`
+	if [ "$status_code" -eq 401 ] 2> /dev/null
 	then
 		echo
 		warn "ERROR (401): This app name already exists, please choose a different one and try again."
 		rm .cloudenv-secret-key
 		exit
 	fi
-	if [ "$status_code" -eq 200 ]
+	if [ "$status_code" -eq 200 ] 2> /dev/null
 	then
 		echo
 		warn "ERROR (200): This app name already exists."
@@ -87,12 +88,14 @@ else
 		echo
 		exit
 	fi
-	echo $slug > .cloudenv-secret-key
+	echo "slug: $slug" > .cloudenv-secret-key
+	echo "secret-key" | tr '\n' ':' >> .cloudenv-secret-key
+	echo | tr '\n' ' ' >> .cloudenv-secret-key
 	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key
 	echo >> .cloudenv-secret-key
 	sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
-	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $bearer" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
-	if [ "$status_code" -eq 201 ]
+	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
+	if [ "$status_code" -eq 201 ] 2> /dev/null
 	then
 		echo
 		ohai "SUCCESS: You have created the app '$name' in CloudEnv. Try the following command next:"
@@ -104,7 +107,7 @@ else
 		echo "$PWD/.cloudenv-secret-key"
 		echo
 	else
-		if [ "$status_code" -eq 401 ]
+		if [ "$status_code" -eq 401 ] 2> /dev/null
 		then
 			echo
 			warn "ERROR ($status_code): Authentication error. Please run: cloudenv login"
