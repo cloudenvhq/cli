@@ -397,7 +397,7 @@ cloudenv_login_command() {
   printf '%s ' 'Do you want to firewall this API token to this IP address (enhanced security on servers)? (N/y):'
   read newkey
   echo
-  if [ "$newkey" == "y" ]
+  if [[ "$newkey" == "y" ]]
   then
     locked=1
   fi
@@ -409,7 +409,7 @@ cloudenv_login_command() {
   printf '%s ' 'Do you want this API token to be read-only? (N/y):'
   read newkey
   echo
-  if [ "$newkey" == "y" ]
+  if [[ "$newkey" == "y" ]]
   then
     readonly=1
   fi
@@ -516,19 +516,17 @@ cloudenv_init_command() {
   
   check_logged_in
   
-  if [ -f .cloudenv-secret-key ]
-  then
+  if [[ -f .cloudenv-secret-key ]]; then
   	echo
   	warn "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
   	echo
   	printf '%s ' 'Generate a new secret key for this project? (N/y):'
   	read newkey
   	echo
-  	if [ "$newkey" == "y" ]
-  	then
+  	if [[ "$newkey" == "y" ]]; then
   		check_can_write_env
   		get_env "default" > "$tempdir/cloudenv-edit-decrypted"
-  		if [ -s "$tempdir/cloudenv-edit-decrypted" ]
+  		if [[ -s "$tempdir/cloudenv-edit-decrypted" ]]
   		then
   			grep "slug" .cloudenv-secret-key > .cloudenv-secret-key-new
   			echo "secret-key" | tr '\n' ':' >> .cloudenv-secret-key-new
@@ -556,7 +554,7 @@ cloudenv_init_command() {
   else
   	account_number=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
   
-  	if [ "$account_number" -gt "1" ]
+  	if [[ "$account_number" -gt "1" ]]
   	then
   		echo
   		ohai "Which account would you like this app to be associated with?"
@@ -586,14 +584,14 @@ cloudenv_init_command() {
   	slug=`echo -n $slug | tr A-Z a-z`
   
   	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps"`
-  	if [ "$status_code" -eq 401 ] 2> /dev/null
+  	if [[ "$status_code" -eq 401 ]] 2> /dev/null
   	then
   		echo
   		warn "ERROR (401): This app name already exists, please choose a different one and try again."
   		rm .cloudenv-secret-key
   		exit
   	fi
-  	if [ "$status_code" -eq 200 ] 2> /dev/null
+  	if [[ "$status_code" -eq 200 ]] 2> /dev/null
   	then
   		echo
   		warn "ERROR (200): This app name already exists."
@@ -609,7 +607,7 @@ cloudenv_init_command() {
   	echo >> .cloudenv-secret-key
   	sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
   	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
-  	if [ "$status_code" -eq 201 ] 2> /dev/null
+  	if [[ "$status_code" -eq 201 ]] 2> /dev/null
   	then
   		echo
   		ohai "SUCCESS: You have created the app '$name' in CloudEnv. Try the following command next:"
@@ -621,7 +619,7 @@ cloudenv_init_command() {
   		echo "$PWD/.cloudenv-secret-key"
   		echo
   	else
-  		if [ "$status_code" -eq 401 ] 2> /dev/null
+  		if [[ "$status_code" -eq 401 ]] 2> /dev/null
   		then
   			echo
   			warn "ERROR ($status_code): Authentication error. Please run: cloudenv login"
@@ -686,7 +684,7 @@ cloudenv_show_command() {
   check_for_project
   check_can_read_env
   
-  if [ "$environment" != "default" ]
+  if [[ "$environment" != "default" ]]
   then
   	get_env "default"
   fi
@@ -708,7 +706,7 @@ cloudenv_push_command() {
   
   echo
   
-  if [ -f "$file" ]
+  if [[ -f "$file" ]]
   then
   	upload_env "$file"
   	ohai "Environment $environment in app $(get_current_app) has been updated"
@@ -1296,8 +1294,7 @@ initialize() {
     output_file=$(mktemp)
     get_encrypted_env $env > "$encrypted_file"
   
-    if [ -s "$encrypted_file" ]
-    then
+    if [[ -s "$encrypted_file" ]]; then
       bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$(get_current_secret)" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
     fi
   
@@ -1318,22 +1315,19 @@ initialize() {
   }
   
   get_bearer() {
-    if [ -f ~/.cloudenvrc ]
-    then
+    if [[ -f ~/.cloudenvrc ]]; then
       cat ~/.cloudenvrc | tr -d " \t\n\r"
     fi
   }
   
   get_current_app() {
-    if [ -f .cloudenv-secret-key ]
-    then
+    if [[ -f .cloudenv-secret-key ]]; then
       grep "slug" .cloudenv-secret-key | awk '{print $2}'
     fi
   }
   
   get_current_secret() {
-    if [ -f .cloudenv-secret-key ]
-    then
+    if [[ -f .cloudenv-secret-key ]]; then
       grep "secret-key" .cloudenv-secret-key | awk '{print $2}'
     fi
   }
@@ -1380,8 +1374,7 @@ initialize() {
   }
   
   check_logged_in() {
-    if [ ! -f ~/.cloudenvrc ]
-    then
+    if [[ ! -f ~/.cloudenvrc ]]; then
       echo
       warn "Not logged in"
       echo
@@ -1392,8 +1385,7 @@ initialize() {
   }
   
   check_for_project() {
-    if [ ! -f .cloudenv-secret-key ]
-    then
+    if [[ ! -f .cloudenv-secret-key ]]; then
       echo
       warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
       echo
@@ -1407,8 +1399,7 @@ initialize() {
   
   check_can_read_env() {
     check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
-    if [ "$check" -eq 0 ]
-    then
+    if [[ "$check" -eq 0 ]]; then
       echo
       warn "Your API key does not have read access to $(get_current_app) ($environment environment)"
       echo
@@ -1422,8 +1413,7 @@ initialize() {
   
   check_can_write_env() {
     check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
-    if [ "$check" -eq 0 ]
-    then
+    if [[ "$check" -eq 0 ]]; then
       echo
       warn "Your API key does not have write access to $(get_current_app) ($environment environment)"
       echo

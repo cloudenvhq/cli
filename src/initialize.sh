@@ -21,8 +21,7 @@ get_env() {
   output_file=$(mktemp)
   get_encrypted_env $env > "$encrypted_file"
 
-  if [ -s "$encrypted_file" ]
-  then
+  if [[ -s "$encrypted_file" ]]; then
     bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$(get_current_secret)" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
   fi
 
@@ -43,22 +42,19 @@ upload_env() {
 }
 
 get_bearer() {
-  if [ -f ~/.cloudenvrc ]
-  then
+  if [[ -f ~/.cloudenvrc ]]; then
     cat ~/.cloudenvrc | tr -d " \t\n\r"
   fi
 }
 
 get_current_app() {
-  if [ -f .cloudenv-secret-key ]
-  then
+  if [[ -f .cloudenv-secret-key ]]; then
     grep "slug" .cloudenv-secret-key | awk '{print $2}'
   fi
 }
 
 get_current_secret() {
-  if [ -f .cloudenv-secret-key ]
-  then
+  if [[ -f .cloudenv-secret-key ]]; then
     grep "secret-key" .cloudenv-secret-key | awk '{print $2}'
   fi
 }
@@ -105,8 +101,7 @@ execute() {
 }
 
 check_logged_in() {
-  if [ ! -f ~/.cloudenvrc ]
-  then
+  if [[ ! -f ~/.cloudenvrc ]]; then
     echo
     warn "Not logged in"
     echo
@@ -117,8 +112,7 @@ check_logged_in() {
 }
 
 check_for_project() {
-  if [ ! -f .cloudenv-secret-key ]
-  then
+  if [[ ! -f .cloudenv-secret-key ]]; then
     echo
     warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
     echo
@@ -132,8 +126,7 @@ check_for_project() {
 
 check_can_read_env() {
   check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
-  if [ "$check" -eq 0 ]
-  then
+  if [[ "$check" -eq 0 ]]; then
     echo
     warn "Your API key does not have read access to $(get_current_app) ($environment environment)"
     echo
@@ -147,8 +140,7 @@ check_can_read_env() {
 
 check_can_write_env() {
   check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
-  if [ "$check" -eq 0 ]
-  then
+  if [[ "$check" -eq 0 ]]; then
     echo
     warn "Your API key does not have write access to $(get_current_app) ($environment environment)"
     echo
