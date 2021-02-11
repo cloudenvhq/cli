@@ -49,13 +49,13 @@ get_bearer() {
 
 get_current_app() {
   if [[ -f .cloudenv-secret-key ]]; then
-    grep "slug" .cloudenv-secret-key | awk '{print $2}'
+    grep "slug: " .cloudenv-secret-key | awk '{print $2}'
   fi
 }
 
 get_current_secret() {
   if [[ -f .cloudenv-secret-key ]]; then
-    grep "secret-key" .cloudenv-secret-key | awk '{print $2}'
+    grep "secret-key: " .cloudenv-secret-key | awk '{print $2}'
   fi
 }
 
