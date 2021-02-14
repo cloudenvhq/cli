@@ -6,7 +6,7 @@ echo
 printf '%s ' 'Do you want to firewall this API token to this IP address (enhanced security on servers)? (N/y):'
 read newkey
 echo
-if [ "$newkey" == "y" ]
+if [[ "$newkey" == "y" ]]
 then
   locked=1
 fi
@@ -18,7 +18,7 @@ echo
 printf '%s ' 'Do you want this API token to be read-only? (N/y):'
 read newkey
 echo
-if [ "$newkey" == "y" ]
+if [[ "$newkey" == "y" ]]
 then
   readonly=1
 fi

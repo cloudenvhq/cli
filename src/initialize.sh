@@ -51,13 +51,13 @@ get_bearer() {
 
 get_current_app() {
   if [[ -f .cloudenv-secret-key ]]; then
-    grep "slug" .cloudenv-secret-key | awk '{print $2}'
+    grep "slug: " .cloudenv-secret-key | awk '{print $2}'
   fi
 }
 
 get_current_secret() {
   if [[ -f .cloudenv-secret-key ]]; then
-    grep "secret-key" .cloudenv-secret-key | awk '{print $2}'
+    grep "secret-key: " .cloudenv-secret-key | awk '{print $2}'
   fi
 }
 
@@ -154,8 +154,9 @@ check_can_read_env() {
 }
 
 check_can_write_env() {
-  check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
-  if [ "$check" -eq 0 ]; then
+  execute "curl" "-s" "-H" "\"Authorization: Bearer $(get_bearer)\"" "\"$base_url/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli\"" "|" "grep $environment" "|" "grep write" "|" "wc" "-l" "|" "xargs"
+
+  if [ "$output" -eq 0 ]; then
     echo
     warn "Your API key does not have write access to $(get_current_app) ($environment environment)"
     echo
