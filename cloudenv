@@ -1650,21 +1650,6 @@ initialize() {
     fi
   }
   
-  expand_tilde()
-  {
-    local tilde_re='^(~[A-Za-z0-9_.-]*)(.*)'
-    local path="$*"
-    local pathSuffix=
-  
-    if [[ $path =~ $tilde_re ]]; then
-      # only use eval on the ~username portion !
-      path=$(eval echo ${BASH_REMATCH[1]})
-      pathSuffix=${BASH_REMATCH[2]}
-    fi
-  
-    echo "${path}${pathSuffix}"
-  }
-  
   getc() {
     local save_state
     save_state=$(/bin/stty -g)
