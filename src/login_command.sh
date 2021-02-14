@@ -81,7 +81,7 @@ hostname > ~/.cloudenvrc-setup
 base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> ~/.cloudenvrc-setup
 echo >> ~/.cloudenvrc-setup
 gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc-setup > "$tempdir/cloudenv.auth"
-curl -s -F "data=@$tempdir/cloudenv.auth" "$BASE_URL/initauth" > "$tempdir/cloudenv.auth-url"
+curl -s -F "data=@$tempdir/cloudenv.auth" "$base_url/initauth" > "$tempdir/cloudenv.auth-url"
 rm "$tempdir/cloudenv.auth"
 
 echo
@@ -99,7 +99,7 @@ re='^[0-9]+$'
 while [[ $data =~ $re ]]
 do
   i=$((i+1))
-  data=`curl -s -F "data=@$HOME/.cloudenvrc-setup" "$BASE_URL/checkauth?locked=$locked&readonly=$readonly&ip_address=$ip_address"`
+  data=`curl -s -F "data=@$HOME/.cloudenvrc-setup" "$base_url/checkauth?locked=$locked&readonly=$readonly&ip_address=$ip_address"`
   sleep 2
 done
 

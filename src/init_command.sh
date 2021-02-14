@@ -23,7 +23,7 @@ then
 			echo >> .cloudenv-secret-key-new
 			mv .cloudenv-secret-key-new .cloudenv-secret-key
 			sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
-			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps"
+			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/apps"
 			upload_env "$tempdir/cloudenv-edit-decrypted"
 		else
 			warn "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
@@ -40,14 +40,14 @@ then
 		rm -rf "$tempdir/cloudenv-edit*"
 	fi
 else
-	account_number=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
+	account_number=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
 
 	if [ "$account_number" -gt "1" ]
 	then
 		echo
 		ohai "Which account would you like this app to be associated with?"
 		echo
-		curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
+		curl -s -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/accounts.txt?version=$version&lang=cli"
 		echo
 		printf '%s' 'Account number (1-'
 		printf '%s' $account_number
@@ -71,7 +71,7 @@ else
 	# finally, lowercase with TR
 	slug=`echo -n $slug | tr A-Z a-z`
 
-	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps"`
+	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/apps"`
 	if [ "$status_code" -eq 401 ] 2> /dev/null
 	then
 		echo
@@ -94,7 +94,7 @@ else
 	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key
 	echo >> .cloudenv-secret-key
 	sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
-	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
+	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/apps" > "$tempdir/cloudenv-app"
 	if [ "$status_code" -eq 201 ] 2> /dev/null
 	then
 		echo

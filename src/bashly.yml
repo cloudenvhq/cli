@@ -1,6 +1,6 @@
 name: cloudenv
 help: CloudEnv
-version: 0.2.0
+version: 0.2.1
 
 environment_variables:
 - name: api_key
@@ -55,6 +55,23 @@ commands:
   - name: environment
     help: Which environment should these variables be accessible in
     default: default
+
+- name: raw
+  short: r
+  help: Show raw encrypted data for an environment
+
+  args:
+  - name: environment
+    help: Which environment should these variables be accessible in
+    default: default
+
+- name: decrypt
+  short: d
+  help: Decrypt a raw data dump
+
+  args:
+  - name: file
+    help: Which file should be decrypted
 
 - name: push
   short: p

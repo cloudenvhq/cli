@@ -29,6 +29,8 @@ cloudenv_usage() {
   echo "  merge     Merge into CloudEnv"
   echo "  edit      Edit an environmental variable file"
   echo "  show      Show an environmental variable file"
+  echo "  raw       Show raw encrypted data for an environment"
+  echo "  decrypt   Decrypt a raw data dump"
   echo "  push      Push an existing environmental variable file"
   echo "  run       Run a command using some environmental variables"
   echo "  upgrade   Upgrade the cloudenv cli"
@@ -239,6 +241,79 @@ cloudenv_show_usage() {
     echo "  ENVIRONMENT"
     printf "    Which environment should these variables be accessible in\n"
     printf "    Default: default\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+cloudenv_raw_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "cloudenv raw - Show raw encrypted data for an environment\n"
+    echo 
+  else
+    printf "cloudenv raw - Show raw encrypted data for an environment\n"
+    echo 
+  fi
+
+  printf "Shortcut: r\n"
+  echo
+
+  printf "Usage:\n"
+  printf "  cloudenv raw [ENVIRONMENT]\n"
+  printf "  cloudenv raw --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+    
+    # :argument.usage
+    echo "  ENVIRONMENT"
+    printf "    Which environment should these variables be accessible in\n"
+    printf "    Default: default\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+cloudenv_decrypt_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "cloudenv decrypt - Decrypt a raw data dump\n"
+    echo 
+  else
+    printf "cloudenv decrypt - Decrypt a raw data dump\n"
+    echo 
+  fi
+
+  printf "Shortcut: d\n"
+  echo
+
+  printf "Usage:\n"
+  printf "  cloudenv decrypt [FILE]\n"
+  printf "  cloudenv decrypt --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+    
+    # :argument.usage
+    echo "  FILE"
+    printf "    Which file should be decrypted\n"
     echo
 
   fi
@@ -472,7 +547,7 @@ cloudenv_login_command() {
   base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> ~/.cloudenvrc-setup
   echo >> ~/.cloudenvrc-setup
   gpg --encrypt --always-trust --armor --recipient support@cloudenv.com --no-version < ~/.cloudenvrc-setup > "$tempdir/cloudenv.auth"
-  curl -s -F "data=@$tempdir/cloudenv.auth" "$BASE_URL/initauth" > "$tempdir/cloudenv.auth-url"
+  curl -s -F "data=@$tempdir/cloudenv.auth" "$base_url/initauth" > "$tempdir/cloudenv.auth-url"
   rm "$tempdir/cloudenv.auth"
   
   echo
@@ -490,7 +565,7 @@ cloudenv_login_command() {
   while [[ $data =~ $re ]]
   do
     i=$((i+1))
-    data=`curl -s -F "data=@$HOME/.cloudenvrc-setup" "$BASE_URL/checkauth?locked=$locked&readonly=$readonly&ip_address=$ip_address"`
+    data=`curl -s -F "data=@$HOME/.cloudenvrc-setup" "$base_url/checkauth?locked=$locked&readonly=$readonly&ip_address=$ip_address"`
     sleep 2
   done
   
@@ -537,7 +612,7 @@ cloudenv_init_command() {
   			echo >> .cloudenv-secret-key-new
   			mv .cloudenv-secret-key-new .cloudenv-secret-key
   			sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
-  			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps"
+  			curl -s --data-urlencode "name=$name" --data-urlencode "sha=${ADDR[1]}" --data-urlencode "version=$version" --data-urlencode "lang=cli" -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/apps"
   			upload_env "$tempdir/cloudenv-edit-decrypted"
   		else
   			warn "Couldn't find this app in CloudEnv, try deleting $PWD/.cloudenv-secret-key and starting over"
@@ -554,14 +629,14 @@ cloudenv_init_command() {
   		rm -rf "$tempdir/cloudenv-edit*"
   	fi
   else
-  	account_number=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
+  	account_number=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/accounts.txt?version=$version&lang=cli" | wc -l | xargs)
   
   	if [ "$account_number" -gt "1" ]
   	then
   		echo
   		ohai "Which account would you like this app to be associated with?"
   		echo
-  		curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/accounts.txt?version=$version&lang=cli"
+  		curl -s -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/accounts.txt?version=$version&lang=cli"
   		echo
   		printf '%s' 'Account number (1-'
   		printf '%s' $account_number
@@ -585,7 +660,7 @@ cloudenv_init_command() {
   	# finally, lowercase with TR
   	slug=`echo -n $slug | tr A-Z a-z`
   
-  	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps"`
+  	status_code=`curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/apps"`
   	if [ "$status_code" -eq 401 ] 2> /dev/null
   	then
   		echo
@@ -608,7 +683,7 @@ cloudenv_init_command() {
   	base64 < /dev/urandom | tr -d 'O0Il1+/' | head -c 256 | tr '\n' '1' >> .cloudenv-secret-key
   	echo >> .cloudenv-secret-key
   	sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
-  	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps" > "$tempdir/cloudenv-app"
+  	curl -s --data-urlencode "slug=$slug" --data-urlencode "name=$name" --data-urlencode "version=$version" --data-urlencode "lang=cli" --data-urlencode "account=$account_number" --data-urlencode "sha=${ADDR[1]}" -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/apps" > "$tempdir/cloudenv-app"
   	if [ "$status_code" -eq 201 ] 2> /dev/null
   	then
   		echo
@@ -692,6 +767,29 @@ cloudenv_show_command() {
   fi
   
   get_env "$environment"
+  
+  rm -rf "$tempdir"
+}
+
+# :command.function
+cloudenv_raw_command() {
+  # :src/raw_command.sh
+  environment="${args[environment]}"
+  
+  check_logged_in
+  check_for_project
+  check_can_read_env
+  get_encrypted_env "$environment"
+  
+  rm -rf "$tempdir"
+}
+
+# :command.function
+cloudenv_decrypt_command() {
+  # :src/decrypt_command.sh
+  file="${args[file]}"
+  
+  decrypt_file "$file"
   
   rm -rf "$tempdir"
 }
@@ -803,6 +901,20 @@ parse_requirements() {
     action="show"
     shift
     cloudenv_show_parse_requirements "$@"
+    shift $#
+    ;;    
+  
+  raw | r )
+    action="raw"
+    shift
+    cloudenv_raw_parse_requirements "$@"
+    shift $#
+    ;;    
+  
+  decrypt | d )
+    action="decrypt"
+    shift
+    cloudenv_decrypt_parse_requirements "$@"
     shift $#
     ;;    
   
@@ -1119,6 +1231,103 @@ cloudenv_show_parse_requirements() {
 }
 
 # :command.parse_requirements
+cloudenv_raw_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+  
+  --help | -h )
+    long_usage=yes
+    cloudenv_raw_usage
+    exit 1
+    ;;
+  
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  # :command.command_filter
+  action="raw"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+  
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+  
+    * )
+      # :command.parse_requirements_case
+      if [[ ! ${args[environment]} ]]; then
+        args[environment]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+      ;;
+  
+    esac
+  done
+  # :command.default_assignments
+  [[ -n ${args[environment]} ]] || args[environment]="default"
+}
+
+# :command.parse_requirements
+cloudenv_decrypt_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+  
+  --help | -h )
+    long_usage=yes
+    cloudenv_decrypt_usage
+    exit 1
+    ;;
+  
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  # :command.command_filter
+  action="decrypt"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+  
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+  
+    * )
+      # :command.parse_requirements_case
+      if [[ ! ${args[file]} ]]; then
+        args[file]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+      ;;
+  
+    esac
+  done
+  # :command.default_assignments
+}
+
+# :command.parse_requirements
 cloudenv_push_parse_requirements() {
   # :command.fixed_flag_filter
   case "$1" in
@@ -1280,14 +1489,16 @@ initialize() {
   #
   # Feel free to empty (but not delete) this file.
   
-  BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
+  base_url=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
+  debug=${CLOUDENV_DEBUG:-0}
   
   tempdir=$(mktemp -d)
   editor="${EDITOR:-nano}"
   
   get_encrypted_env() {
     env=${1:-default}
-    curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/envs?name=$(get_current_app)&environment=$env&version=$version&lang=cli"
+    execute "curl" "-s" "-H" "\"Authorization: Bearer $(get_bearer)\"" "\"$base_url/api/v1/envs?name=$(get_current_app)&environment=$env&version=$version&lang=cli\""
+    echo "$output"
   }
   
   get_env() {
@@ -1295,45 +1506,41 @@ initialize() {
     encrypted_file=$(mktemp)
     output_file=$(mktemp)
     get_encrypted_env $env > "$encrypted_file"
-  
-    if [ -s "$encrypted_file" ]
-    then
-      bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$(get_current_secret)" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
-    fi
-  
+    decrypt_file "$encrypted_file"
     rm -rf "$encrypted_file"
-    cat "$output_file"
-    rm -rf "$output_file"
   }
   
   encrypt_env() {
-    openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$(get_current_secret)" -in "$1" -out "$2" 2> /dev/null
+    execute "openssl" "enc" "-a" "-aes-256-cbc" "-md" "sha512" "-pass" "pass:\"$(get_current_secret)\"" "-in" "\"$1\"" "-out" "\"$2\"" "2>" "/dev/null"
+    echo "$output"
+  }
+  
+  decrypt_file() {
+    execute "openssl" "enc" "-a" "-aes-256-cbc" "-md" "sha512" "-d" "-pass" "pass:\"$(get_current_secret)\"" "-in" "\"$1\"" "2>" "/dev/null"
+    echo "$output"
   }
   
   upload_env() {
     encrypted_file=$(mktemp)
     encrypt_env "$1" "$encrypted_file" "$(get_current_secret)"
-    curl -s -H "Authorization: Bearer $(get_bearer)" -F "data=@$encrypted_file" "$BASE_URL/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" > /dev/null
+    curl -s -H "Authorization: Bearer $(get_bearer)" -F "data=@$encrypted_file" "$base_url/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" > /dev/null
     rm -rf "$encrypted_file"
   }
   
   get_bearer() {
-    if [ -f ~/.cloudenvrc ]
-    then
+    if [[ -f ~/.cloudenvrc ]]; then
       cat ~/.cloudenvrc | tr -d " \t\n\r"
     fi
   }
   
   get_current_app() {
-    if [ -f .cloudenv-secret-key ]
-    then
+    if [[ -f .cloudenv-secret-key ]]; then
       grep "slug" .cloudenv-secret-key | awk '{print $2}'
     fi
   }
   
   get_current_secret() {
-    if [ -f .cloudenv-secret-key ]
-    then
+    if [[ -f .cloudenv-secret-key ]]; then
       grep "secret-key" .cloudenv-secret-key | awk '{print $2}'
     fi
   }
@@ -1361,6 +1568,11 @@ initialize() {
     done
   }
   
+  abort() {
+    printf "%s\n" "$1"
+    exit 1
+  }
+  
   chomp() {
     printf "%s" "${1/"$'\n'"/}"
   }
@@ -1374,14 +1586,20 @@ initialize() {
   }
   
   execute() {
-    if ! "$@"; then
-      abort "$(printf "Failed during: %s" "$(shell_join "$@")")"
+    if [ "$debug" -eq 1 ]; then
+      echo "EXEC: $(shell_join "$@")"
+    fi
+  
+    output=$(eval "$@")
+  
+    if [ "$debug" -eq 1 ]; then
+      echo "GOT: $output" | head -1
+      echo
     fi
   }
   
   check_logged_in() {
-    if [ ! -f ~/.cloudenvrc ]
-    then
+    if [[ ! -f ~/.cloudenvrc ]]; then
       echo
       warn "Not logged in"
       echo
@@ -1392,8 +1610,7 @@ initialize() {
   }
   
   check_for_project() {
-    if [ ! -f .cloudenv-secret-key ]
-    then
+    if [[ ! -f .cloudenv-secret-key ]]; then
       echo
       warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
       echo
@@ -1406,9 +1623,9 @@ initialize() {
   }
   
   check_can_read_env() {
-    check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
-    if [ "$check" -eq 0 ]
-    then
+    execute "curl" "-s" "-H" "\"Authorization: Bearer $(get_bearer)\"" "\"$base_url/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli\"" "|" "grep $environment" "|" "grep read" "|" "wc" "-l" "|" "xargs"
+  
+    if [ "$output" -eq 0 ]; then
       echo
       warn "Your API key does not have read access to $(get_current_app) ($environment environment)"
       echo
@@ -1421,9 +1638,8 @@ initialize() {
   }
   
   check_can_write_env() {
-    check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
-    if [ "$check" -eq 0 ]
-    then
+    check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
+    if [ "$check" -eq 0 ]; then
       echo
       warn "Your API key does not have write access to $(get_current_app) ($environment environment)"
       echo
@@ -1437,18 +1653,17 @@ initialize() {
   
   expand_tilde()
   {
-      local tilde_re='^(~[A-Za-z0-9_.-]*)(.*)'
-      local path="$*"
-      local pathSuffix=
+    local tilde_re='^(~[A-Za-z0-9_.-]*)(.*)'
+    local path="$*"
+    local pathSuffix=
   
-      if [[ $path =~ $tilde_re ]]
-      then
-          # only use eval on the ~username portion !
-          path=$(eval echo ${BASH_REMATCH[1]})
-          pathSuffix=${BASH_REMATCH[2]}
-      fi
+    if [[ $path =~ $tilde_re ]]; then
+      # only use eval on the ~username portion !
+      path=$(eval echo ${BASH_REMATCH[1]})
+      pathSuffix=${BASH_REMATCH[2]}
+    fi
   
-      echo "${path}${pathSuffix}"
+    echo "${path}${pathSuffix}"
   }
   
   getc() {
@@ -1528,6 +1743,22 @@ run() {
       cloudenv_show_usage
     else
       cloudenv_show_command
+    fi
+  
+  elif [[ $action == "raw" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      cloudenv_raw_usage
+    else
+      cloudenv_raw_command
+    fi
+  
+  elif [[ $action == "decrypt" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      cloudenv_decrypt_usage
+    else
+      cloudenv_decrypt_command
     fi
   
   elif [[ $action == "push" ]]; then

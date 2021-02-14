@@ -5,14 +5,16 @@
 #
 # Feel free to empty (but not delete) this file.
 
-BASE_URL=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
+base_url=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
+debug=${CLOUDENV_DEBUG:-0}
 
 tempdir=$(mktemp -d)
 editor="${EDITOR:-nano}"
 
 get_encrypted_env() {
   env=${1:-default}
-  curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/envs?name=$(get_current_app)&environment=$env&version=$version&lang=cli"
+  execute "curl" "-s" "-H" "\"Authorization: Bearer $(get_bearer)\"" "\"$base_url/api/v1/envs?name=$(get_current_app)&environment=$env&version=$version&lang=cli\""
+  echo "$output"
 }
 
 get_env() {
@@ -20,45 +22,41 @@ get_env() {
   encrypted_file=$(mktemp)
   output_file=$(mktemp)
   get_encrypted_env $env > "$encrypted_file"
-
-  if [ -s "$encrypted_file" ]
-  then
-    bash -c "$(openssl enc -a -aes-256-cbc -md sha512 -d -pass pass:"$(get_current_secret)" -in "$encrypted_file" -out "$output_file" 2> /dev/null)"
-  fi
-
+  decrypt_file "$encrypted_file"
   rm -rf "$encrypted_file"
-  cat "$output_file"
-  rm -rf "$output_file"
 }
 
 encrypt_env() {
-  openssl enc -a -aes-256-cbc -md sha512 -pass pass:"$(get_current_secret)" -in "$1" -out "$2" 2> /dev/null
+  execute "openssl" "enc" "-a" "-aes-256-cbc" "-md" "sha512" "-pass" "pass:\"$(get_current_secret)\"" "-in" "\"$1\"" "-out" "\"$2\"" "2>" "/dev/null"
+  echo "$output"
+}
+
+decrypt_file() {
+  execute "openssl" "enc" "-a" "-aes-256-cbc" "-md" "sha512" "-d" "-pass" "pass:\"$(get_current_secret)\"" "-in" "\"$1\"" "2>" "/dev/null"
+  echo "$output"
 }
 
 upload_env() {
   encrypted_file=$(mktemp)
   encrypt_env "$1" "$encrypted_file" "$(get_current_secret)"
-  curl -s -H "Authorization: Bearer $(get_bearer)" -F "data=@$encrypted_file" "$BASE_URL/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" > /dev/null
+  curl -s -H "Authorization: Bearer $(get_bearer)" -F "data=@$encrypted_file" "$base_url/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" > /dev/null
   rm -rf "$encrypted_file"
 }
 
 get_bearer() {
-  if [ -f ~/.cloudenvrc ]
-  then
+  if [[ -f ~/.cloudenvrc ]]; then
     cat ~/.cloudenvrc | tr -d " \t\n\r"
   fi
 }
 
 get_current_app() {
-  if [ -f .cloudenv-secret-key ]
-  then
+  if [[ -f .cloudenv-secret-key ]]; then
     grep "slug" .cloudenv-secret-key | awk '{print $2}'
   fi
 }
 
 get_current_secret() {
-  if [ -f .cloudenv-secret-key ]
-  then
+  if [[ -f .cloudenv-secret-key ]]; then
     grep "secret-key" .cloudenv-secret-key | awk '{print $2}'
   fi
 }
@@ -86,6 +84,11 @@ shell_join() {
   done
 }
 
+abort() {
+  printf "%s\n" "$1"
+  exit 1
+}
+
 chomp() {
   printf "%s" "${1/"$'\n'"/}"
 }
@@ -99,14 +102,20 @@ warn() {
 }
 
 execute() {
-  if ! "$@"; then
-    abort "$(printf "Failed during: %s" "$(shell_join "$@")")"
+  if [ "$debug" -eq 1 ]; then
+    echo "EXEC: $(shell_join "$@")"
+  fi
+
+  output=$(eval "$@")
+
+  if [ "$debug" -eq 1 ]; then
+    echo "GOT: $output" | head -1
+    echo
   fi
 }
 
 check_logged_in() {
-  if [ ! -f ~/.cloudenvrc ]
-  then
+  if [[ ! -f ~/.cloudenvrc ]]; then
     echo
     warn "Not logged in"
     echo
@@ -117,8 +126,7 @@ check_logged_in() {
 }
 
 check_for_project() {
-  if [ ! -f .cloudenv-secret-key ]
-  then
+  if [[ ! -f .cloudenv-secret-key ]]; then
     echo
     warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
     echo
@@ -131,9 +139,9 @@ check_for_project() {
 }
 
 check_can_read_env() {
-  check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "read" | wc -l | xargs)
-  if [ "$check" -eq 0 ]
-  then
+  execute "curl" "-s" "-H" "\"Authorization: Bearer $(get_bearer)\"" "\"$base_url/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli\"" "|" "grep $environment" "|" "grep read" "|" "wc" "-l" "|" "xargs"
+
+  if [ "$output" -eq 0 ]; then
     echo
     warn "Your API key does not have read access to $(get_current_app) ($environment environment)"
     echo
@@ -146,9 +154,8 @@ check_can_read_env() {
 }
 
 check_can_write_env() {
-  check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$BASE_URL/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
-  if [ "$check" -eq 0 ]
-  then
+  check=$(curl -s -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/apps/show.txt?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" | grep "$environment" | grep "write" | wc -l | xargs)
+  if [ "$check" -eq 0 ]; then
     echo
     warn "Your API key does not have write access to $(get_current_app) ($environment environment)"
     echo
@@ -162,18 +169,17 @@ check_can_write_env() {
 
 expand_tilde()
 {
-    local tilde_re='^(~[A-Za-z0-9_.-]*)(.*)'
-    local path="$*"
-    local pathSuffix=
+  local tilde_re='^(~[A-Za-z0-9_.-]*)(.*)'
+  local path="$*"
+  local pathSuffix=
 
-    if [[ $path =~ $tilde_re ]]
-    then
-        # only use eval on the ~username portion !
-        path=$(eval echo ${BASH_REMATCH[1]})
-        pathSuffix=${BASH_REMATCH[2]}
-    fi
+  if [[ $path =~ $tilde_re ]]; then
+    # only use eval on the ~username portion !
+    path=$(eval echo ${BASH_REMATCH[1]})
+    pathSuffix=${BASH_REMATCH[2]}
+  fi
 
-    echo "${path}${pathSuffix}"
+  echo "${path}${pathSuffix}"
 }
 
 getc() {
