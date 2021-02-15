@@ -1,6 +1,6 @@
 name: cloudenv
 help: CloudEnv
-version: 0.2.1
+version: 0.2.2
 
 environment_variables:
 - name: api_key
@@ -41,6 +41,14 @@ commands:
 - name: edit
   short: e
   help: Edit an environmental variable file
+
+  args:
+  - name: environment
+    help: Which environment should these variables be accessible in
+    default: default
+
+- name: source
+  help: Provide a source for configuring environment variables
 
   args:
   - name: environment
