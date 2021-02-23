@@ -95,7 +95,7 @@ else
 	sha="$(openssl dgst -sha256 .cloudenv-secret-key | awk '{print $2}')"
   
   execute "curl" "-s" "--data-urlencode" "\"slug=$slug\"" "--data-urlencode" "\"name=$name\"" "--data-urlencode" "\"version=$version\"" "--data-urlencode" "\"lang=cli\"" "--data-urlencode" "\"account=$account_number\"" "--data-urlencode" "\"sha=${ADDR[1]}\"" "-H" "\"Authorization: Bearer $(get_bearer)"\" "\"$base_url/api/v1/apps"\"
-	if [[ "$output" -eq 201 ]] 2> /dev/null
+	if [[ "$output" -eq 200 ]] 2> /dev/null
 	then
 		echo
 		ohai "SUCCESS: You have created the app '$name' in CloudEnv. Try the following command next:"
