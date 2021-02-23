@@ -4,9 +4,12 @@ check_logged_in
 check_for_project
 check_can_write_env
 
-get_env "$environment" > "$tempdir/cloudenv-edit-$environment"
+get_env "$environment"
 
-cp "$tempdir/cloudenv-edit-$environment" "$tempdir/cloudenv-orig-$environment"
+execute "print_result" ">" "$tempdir/cloudenv-edit-$environment"
+
+execute "cp" "$tempdir/cloudenv-edit-$environment" "$tempdir/cloudenv-orig-$environment"
+
 "$editor" "$tempdir/cloudenv-edit-$environment"
 
 echo

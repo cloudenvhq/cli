@@ -6,7 +6,7 @@
 # Feel free to empty (but not delete) this file.
 
 base_url=${CLOUDENV_BASE_URL:-https://app.cloudenv.com}
-debug=${CLOUDENV_DEBUG:-0}
+debug=${DEBUG:-0}
 
 tempdir=$(mktemp -d)
 editor="${EDITOR:-nano}"
@@ -14,32 +14,35 @@ editor="${EDITOR:-nano}"
 get_encrypted_env() {
   env=${1:-default}
   execute "curl" "-s" "-H" "\"Authorization: Bearer $(get_bearer)\"" "\"$base_url/api/v1/envs?name=$(get_current_app)&environment=$env&version=$version&lang=cli\""
-  echo "$output"
 }
 
 get_env() {
   env=${1:-default}
   encrypted_file=$(mktemp)
   output_file=$(mktemp)
-  get_encrypted_env $env > "$encrypted_file"
-  decrypt_file "$encrypted_file"
-  rm -rf "$encrypted_file"
+  get_encrypted_env $env
+  echo "$output" | tr -d '\n' > "$encrypted_file"
+  if [ -s "$encrypted_file" ]; then
+    echo "$output" > "$encrypted_file"
+    decrypt_file "$encrypted_file"
+  else
+    output=""
+  fi
 }
 
 encrypt_env() {
-  execute "openssl" "enc" "-a" "-aes-256-cbc" "-md" "sha512" "-pass" "pass:\"$(get_current_secret)\"" "-in" "\"$1\"" "-out" "\"$2\"" "2>" "/dev/null"
-  echo "$output"
+  execute "openssl" "enc" "-a" "-aes-256-cbc" "-md" "sha512" "-pass" "pass:\"$(get_current_secret)\"" "-in" "\"$1\"" "2>" "/dev/null"
 }
 
 decrypt_file() {
   execute "openssl" "enc" "-a" "-aes-256-cbc" "-md" "sha512" "-d" "-pass" "pass:\"$(get_current_secret)\"" "-in" "\"$1\"" "2>" "/dev/null"
-  echo "$output"
 }
 
 upload_env() {
   encrypted_file=$(mktemp)
-  encrypt_env "$1" "$encrypted_file" "$(get_current_secret)"
-  curl -s -H "Authorization: Bearer $(get_bearer)" -F "data=@$encrypted_file" "$base_url/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" > /dev/null
+  encrypt_env "$1"
+  print_result > "$encrypted_file"
+  execute "curl" "-s" "-H" "\"Authorization: Bearer $(get_bearer)\"" "-F" "\"data=@$encrypted_file\"" "\"$base_url/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli\"" ">" "/dev/null"
   rm -rf "$encrypted_file"
 }
 
@@ -59,6 +62,10 @@ get_current_secret() {
   if [[ -f .cloudenv-secret-key ]]; then
     grep "secret-key: " .cloudenv-secret-key | awk '{print $2}'
   fi
+}
+
+print_result() {
+  echo "$output"
 }
 
 # string formatters
