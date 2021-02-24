@@ -10,7 +10,8 @@ re=^\s*[A-Za-z_][A-Za-z0-9_]*=
 
 if [[ "$environment" != "default" ]]
 then
-  for line in $(get_env "default"); do
+  get_env "default"
+  for line in $(print_result); do
     if [[ $line =~ $re ]]; then
       echo "export $line" >> $env_file
     else
@@ -19,7 +20,8 @@ then
   done
 fi
 
-for line in $(get_env "$environment"); do
+get_env "$environment"
+for line in $(print_result); do
   if [[ $line =~ $re ]]; then
     echo "export $line" >> $env_file
   else
