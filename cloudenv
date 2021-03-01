@@ -1612,8 +1612,8 @@ initialize() {
   }
   
   get_bearer() {
-    if [[ -n "$CLOUDENV_API_TOKEN" ]]; then
-      echo "$CLOUDENV_API_TOKEN"
+    if [[ -n "$CLOUDENV_BEARER_TOKEN" ]]; then
+      echo "$CLOUDENV_BEARER_TOKEN"
     elif [[ -f ~/.cloudenvrc ]]; then
         tr -d " \t\n\r" < ~/.cloudenvrc
     fi
