@@ -1559,7 +1559,7 @@ cloudenv_upgrade_parse_requirements() {
 
 # :command.initialize
 initialize() {
-  version="0.2.4"
+  version="0.2.5"
   long_usage=''
   set -e  
 
@@ -1579,13 +1579,13 @@ initialize() {
   
   get_encrypted_env() {
     env=${1:-default}
-    execute curl -s -H "'Authorization: Bearer $(get_bearer)'" "$base_url/api/v1/envs?name=$(get_current_app)&environment=$env&version=$version&lang=cli"
+    execute "curl" "-s" "-H" "\"Authorization: Bearer $(get_bearer)\"" "\"$base_url/api/v1/envs?name=$(get_current_app)&environment=$env&version=$version&lang=cli\""
   }
   
   get_env() {
     env=${1:-default}
     encrypted_file=$(mktemp)
-    get_encrypted_env "$env"
+    get_encrypted_env $env
     echo "$output" | tr -d '\n' > "$encrypted_file"
     if [ -s "$encrypted_file" ]; then
       echo "$output" > "$encrypted_file"
@@ -1596,18 +1596,18 @@ initialize() {
   }
   
   encrypt_env() {
-    execute openssl enc -a -aes-256-cbc -md sha512 -pass "pass:\"$(get_current_secret)\"" -in "$1" "2>" /dev/null
+    execute "openssl" "enc" "-a" "-aes-256-cbc" "-md" "sha512" "-pass" "pass:\"$(get_current_secret)\"" "-in" "\"$1\"" "2>" "/dev/null"
   }
   
   decrypt_file() {
-    execute openssl enc -a -aes-256-cbc -md sha512 -d -pass "pass:\"$(get_current_secret)\"" -in "$1" "2>" /dev/null
+    execute "openssl" "enc" "-a" "-aes-256-cbc" "-md" "sha512" "-d" "-pass" "pass:\"$(get_current_secret)\"" "-in" "\"$1\"" "2>" "/dev/null"
   }
   
   upload_env() {
     encrypted_file=$(mktemp)
     encrypt_env "$1"
     print_result > "$encrypted_file"
-    execute curl -s -H "'Authorization: Bearer $(get_bearer)'" -F "data=@$encrypted_file" "$base_url/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli" ">" /dev/null
+    execute "curl" "-s" "-H" "\"Authorization: Bearer $(get_bearer)\"" "-F" "\"data=@$encrypted_file\"" "\"$base_url/api/v1/envs?name=$(get_current_app)&environment=$environment&version=$version&lang=cli\"" ">" "/dev/null"
     rm -rf "$encrypted_file"
   }
   
