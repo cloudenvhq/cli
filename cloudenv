@@ -1559,7 +1559,7 @@ cloudenv_upgrade_parse_requirements() {
 
 # :command.initialize
 initialize() {
-  version="0.2.4"
+  version="0.2.5"
   long_usage=''
   set -e  
 
