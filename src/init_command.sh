@@ -7,7 +7,7 @@ if [[ -f .cloudenv-secret-key ]]; then
 	warn "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
 	echo
 	printf '%s ' 'Generate a new secret key for this project? (N/y):'
-	read newkey
+	read -r newkey
 	echo
 	if [[ "$newkey" == "y" ]]; then
 		check_can_write_env
@@ -50,7 +50,7 @@ else
 		printf '%s' 'Account number (1-'
 		printf '%s' $account_number
 		printf '%s ' '):'
-		read account_number
+		read -r account_number
 		echo
 		ohai "Got it, now let's name your app."
 		echo
@@ -61,13 +61,13 @@ else
 	fi
 
 	printf '%s ' 'Name of App:'
-	read name
+	read -r name
 	# first, replace spaces with dashes
 	slug=${name// /-}
 	# now, clean out anything that's not alphanumeric or a dash
 	slug=${slug//[^a-zA-Z0-9\-]/}
 	# finally, lowercase with TR
-	slug=`echo -n $slug | tr A-Z a-z`
+	slug=$(echo -n "$slug" | tr A-Z a-z)
 
   execute "curl" "-s" "--data-urlencode" "\"slug=$slug\"" "--data-urlencode" "\"name=$name\"" "--data-urlencode" "\"version=$version\"" "--data-urlencode" "\"lang=cli\"" "--data-urlencode" "\"account=$account_number\"" "-H" "\"Authorization: Bearer $(get_bearer)"\" "\"$base_url/api/v1/apps"\"
 

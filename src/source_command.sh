@@ -4,7 +4,7 @@ check_logged_in
 check_for_project
 check_can_read_env
 
-env_file=`mktemp`
+env_file=$(mktemp)
 IFS=$'\n'
 re=^\s*[A-Za-z_][A-Za-z0-9_]*=
 
@@ -13,9 +13,9 @@ then
   get_env "default"
   for line in $(print_result); do
     if [[ $line =~ $re ]]; then
-      echo "export $line" >> $env_file
+      echo "export $line" >> "$env_file"
     else
-      echo "$line" >> $env_file
+      echo "$line" >> "$env_file"
     fi
   done
 fi
@@ -23,9 +23,9 @@ fi
 get_env "$environment"
 for line in $(print_result); do
   if [[ $line =~ $re ]]; then
-    echo "export $line" >> $env_file
+    echo "export $line" >> "$env_file"
   else
-    echo "$line" >> $env_file
+    echo "$line" >> "$env_file"
   fi
 done
 

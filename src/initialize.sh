@@ -138,7 +138,9 @@ check_logged_in() {
 }
 
 check_for_project() {
-  if [[ ! -f .cloudenv-secret-key ]]; then
+  if [[ -n "$CLOUDENV_APP_SLUG" ]] && [[ -n "$CLOUDENV_APP_SECRET_KEY" ]]; then
+    : # we are good
+  elif [[ ! -f .cloudenv-secret-key ]]; then
     echo
     warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
     echo

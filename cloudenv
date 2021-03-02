@@ -575,7 +575,7 @@ cloudenv_init_command() {
   	warn "Already found an existing CloudEnv project in $PWD/.cloudenv-secret-key"
   	echo
   	printf '%s ' 'Generate a new secret key for this project? (N/y):'
-  	read newkey
+  	read -r newkey
   	echo
   	if [[ "$newkey" == "y" ]]; then
   		check_can_write_env
@@ -618,7 +618,7 @@ cloudenv_init_command() {
   		printf '%s' 'Account number (1-'
   		printf '%s' $account_number
   		printf '%s ' '):'
-  		read account_number
+  		read -r account_number
   		echo
   		ohai "Got it, now let's name your app."
   		echo
@@ -629,13 +629,13 @@ cloudenv_init_command() {
   	fi
   
   	printf '%s ' 'Name of App:'
-  	read name
+  	read -r name
   	# first, replace spaces with dashes
   	slug=${name// /-}
   	# now, clean out anything that's not alphanumeric or a dash
   	slug=${slug//[^a-zA-Z0-9\-]/}
   	# finally, lowercase with TR
-  	slug=`echo -n $slug | tr A-Z a-z`
+  	slug=$(echo -n "$slug" | tr A-Z a-z)
   
     execute "curl" "-s" "--data-urlencode" "\"slug=$slug\"" "--data-urlencode" "\"name=$name\"" "--data-urlencode" "\"version=$version\"" "--data-urlencode" "\"lang=cli\"" "--data-urlencode" "\"account=$account_number\"" "-H" "\"Authorization: Bearer $(get_bearer)"\" "\"$base_url/api/v1/apps"\"
   
@@ -743,7 +743,7 @@ cloudenv_source_command() {
   check_for_project
   check_can_read_env
   
-  env_file=`mktemp`
+  env_file=$(mktemp)
   IFS=$'\n'
   re=^\s*[A-Za-z_][A-Za-z0-9_]*=
   
@@ -752,9 +752,9 @@ cloudenv_source_command() {
     get_env "default"
     for line in $(print_result); do
       if [[ $line =~ $re ]]; then
-        echo "export $line" >> $env_file
+        echo "export $line" >> "$env_file"
       else
-        echo "$line" >> $env_file
+        echo "$line" >> "$env_file"
       fi
     done
   fi
@@ -762,9 +762,9 @@ cloudenv_source_command() {
   get_env "$environment"
   for line in $(print_result); do
     if [[ $line =~ $re ]]; then
-      echo "export $line" >> $env_file
+      echo "export $line" >> "$env_file"
     else
-      echo "$line" >> $env_file
+      echo "$line" >> "$env_file"
     fi
   done
   
@@ -1704,7 +1704,9 @@ initialize() {
   }
   
   check_for_project() {
-    if [[ ! -f .cloudenv-secret-key ]]; then
+    if [[ -n "$CLOUDENV_APP_SLUG" ]] && [[ -n "$CLOUDENV_APP_SECRET_KEY" ]]; then
+      : # we are good
+    elif [[ ! -f .cloudenv-secret-key ]]; then
       echo
       warn "Couldn't find a cloudenv project in $PWD/.cloudenv-secret-key"
       echo
