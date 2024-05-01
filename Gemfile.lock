@@ -1,37 +1,30 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    bashly (0.9.5)
-      colsole (>= 0.8.1, < 2)
-      completely (~> 0.5)
-      filewatcher (~> 2.0)
-      gtx (~> 0.1)
-      lp (~> 0.2)
+    bashly (0.7.10)
+      colsole (~> 0.6)
+      completely (~> 0.3)
       mister_bin (~> 0.7)
-      requires (~> 1.0)
-    colsole (1.0.0)
+      requires (~> 0.1)
+    colsole (0.8.2)
     completely (0.5.4)
       colsole (>= 0.8.1, < 2)
       mister_bin (~> 0.7)
     docopt_ng (0.7.1)
-    filewatcher (2.1.0)
-      module_methods (~> 0.1.0)
-    gtx (0.1.0)
-    lp (0.2.1)
     mister_bin (0.7.6)
       colsole (>= 0.8.1, < 2)
       docopt_ng (~> 0.7, >= 0.7.1)
-    module_methods (0.1.0)
-    requires (1.0.1)
+    requires (0.2.0)
 
 PLATFORMS
+  arm64-darwin-21
   arm64-darwin-22
 
 DEPENDENCIES
-  bashly (~> 0.7)
+  bashly (~> 0.7.1)
 
 RUBY VERSION
    ruby 2.7.6p219
 
 BUNDLED WITH
-   2.4.22
+   2.3.11
