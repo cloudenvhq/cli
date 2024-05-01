@@ -48,7 +48,7 @@ else
 		curl -s -H "Authorization: Bearer $(get_bearer)" "$base_url/api/v1/accounts.txt?version=$version&lang=cli"
 		echo
 		printf '%s' 'Account number (1-'
-		printf '%s' $account_number
+		printf '%s' "$account_number"
 		printf '%s ' '):'
 		read -r account_number
 		echo
